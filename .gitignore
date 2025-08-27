@@ -1,0 +1,7 @@
+/index.html
+/node_modules
+/package-lock.json
+/package.json
+/src
+/tsconfig.json
+/vite.config.ts
