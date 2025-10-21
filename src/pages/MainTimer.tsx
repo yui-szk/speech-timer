@@ -1,4 +1,4 @@
-import { TimeDisplay, CircularProgress, Controls } from '../components'
+import { TimeDisplay, CircularProgress, Controls, BellScheduleStrip } from '../components'
 
 const MainTimer = () => {
   return (
@@ -27,24 +27,8 @@ const MainTimer = () => {
         {/* Controls - 実装完了 */}
         <Controls onBellTest={() => console.log('ベルテスト実行')} />
         
-        {/* BellScheduleStrip プレースホルダー */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-caption1 text-gray-500 mb-2">ベル設定</div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-subheadline">1令</span>
-              <span className="text-subheadline text-mint-600">08:00</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-subheadline">2令</span>
-              <span className="text-subheadline text-mint-600">02:00</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-subheadline">3令</span>
-              <span className="text-subheadline text-mint-600">00:00</span>
-            </div>
-          </div>
-        </div>
+        {/* BellScheduleStrip - 実装完了 */}
+        <BellScheduleStrip />
         
         {/* StartAndNowClock プレースホルダー */}
         <div className="bg-gray-50 rounded-lg p-4 text-center">
