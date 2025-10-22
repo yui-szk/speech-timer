@@ -163,6 +163,58 @@ describe('useTimer', () => {
       expect(result.current.durationMs).toBe(newDuration)
       expect(result.current.remainingMs).toBe(newDuration)
     })
+
+    it('should prevent duplicate duration updates', async () => {
+      const { result } = renderHook(() => useTimer())
+      
+      // timerSingletonをimport
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      // 初期状態を確認
+      const initialDuration = result.current.durationMs
+      
+      // スパイを設定（初期化後に設定）
+      const setDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      const setStoreDurationSpy = vi.spyOn(useAppStore.getState(), 'setDuration')
+      
+      // 同じ値でsetDurationを複数回呼び出し
+      act(() => {
+        result.current.setDuration(initialDuration)
+        result.current.setDuration(initialDuration)
+        result.current.setDuration(initialDuration)
+      })
+      
+      // 同じ値の場合は更新が呼ばれていないことを確認
+      expect(setDurationSpy).not.toHaveBeenCalled()
+      expect(setStoreDurationSpy).not.toHaveBeenCalled()
+      
+      setDurationSpy.mockRestore()
+      setStoreDurationSpy.mockRestore()
+    })
+
+    it('should allow updates when duration value changes', async () => {
+      const { result } = renderHook(() => useTimer())
+      
+      // timerSingletonをimport
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      // 初期状態を確認
+      const initialDuration = result.current.durationMs
+      
+      // 異なる値でsetDurationを呼び出し
+      const newDuration = initialDuration + 1000
+      
+      act(() => {
+        result.current.setDuration(newDuration)
+      })
+      
+      // 最終的に値が更新されていることを確認
+      expect(result.current.durationMs).toBe(newDuration)
+      
+      // timerSingletonの状態も更新されていることを確認
+      const updatedState = timerSingleton.getState()
+      expect(updatedState?.durationMs).toBe(newDuration)
+    })
   })
 
   describe('Store Synchronization', () => {

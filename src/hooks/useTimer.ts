@@ -3,9 +3,10 @@
  * Provides high-precision timer functionality with state synchronization and bell scheduling
  */
 
-import { useEffect, useRef, useCallback } from 'react'
-import { TimerEngine, type TimerEngineState, type TimerStatus } from '../utils/timer-engine'
+import { useEffect, useRef, useCallback, useState } from 'react'
+import { type TimerEngineState, type TimerStatus } from '../utils/timer-engine'
 import { BellScheduler, type BellTriggerEvent } from '../utils/bell-scheduler'
+import { timerSingleton } from '../utils/timer-singleton'
 import { useAppStore } from '../store'
 import type { Millis } from '../types'
 
@@ -37,7 +38,6 @@ export interface UseTimerReturn {
 }
 
 export function useTimer(): UseTimerReturn {
-  const engineRef = useRef<TimerEngine | null>(null)
   const bellSchedulerRef = useRef<BellScheduler | null>(null)
   
   // Store state and actions
@@ -50,6 +50,40 @@ export function useTimer(): UseTimerReturn {
     triggerBell: state.triggerBell,
     resetBells: state.resetBells
   }))
+
+  // Local state to track engine state and trigger re-renders
+  const [engineState, setEngineState] = useState<TimerEngineState>(() => {
+    const currentState = timerSingleton.getState()
+    return currentState || {
+      status: 'idle' as TimerStatus,
+      durationMs: timer.durationMs,
+      elapsedMs: 0,
+      remainingMs: timer.durationMs,
+      pauseAccumulatedMs: 0,
+      lastUpdateTime: performance.now(),
+      precisionDriftMs: 0
+    }
+  })
+
+  // Use refs to store current values for callbacks
+  const callbacksRef = useRef({
+    updateNow,
+    triggerBell,
+    resetBells,
+    settings,
+    bells
+  })
+
+  // Update callback refs when values change
+  useEffect(() => {
+    callbacksRef.current = {
+      updateNow,
+      triggerBell,
+      resetBells,
+      settings,
+      bells
+    }
+  }, [updateNow, triggerBell, resetBells, settings, bells])
 
   // Initialize bell scheduler
   useEffect(() => {
@@ -70,52 +104,44 @@ export function useTimer(): UseTimerReturn {
     }
   }, [triggerBell])
 
-  // Initialize timer engine
+  // Initialize timer singleton (only once globally)
   useEffect(() => {
-    const engine = new TimerEngine(timer.durationMs, {
-      onTick: (state: TimerEngineState) => {
-        // Update store with current time for other components
-        updateNow(state.lastUpdateTime)
-        
-        // Check bells during timer tick
-        if (bellSchedulerRef.current && state.status === 'running') {
-          const triggeredBells = bellSchedulerRef.current.checkBells(
-            state.remainingMs,
-            settings,
-            bells
-          )
-          // Bell state updates are handled by the scheduler callback
-        }
-      },
+    // Initialize the singleton if not already done
+    if (!timerSingleton.getState()) {
+      timerSingleton.initialize(timer.durationMs)
+    }
+
+    // Subscribe to timer state changes
+    const unsubscribe = timerSingleton.subscribe((state: TimerEngineState) => {
+      setEngineState({ ...state })
       
-      onStatusChange: (status: TimerStatus, state: TimerEngineState) => {
-        // Sync status changes with store
-        updateNow(state.lastUpdateTime)
-        
-        // Reset bells when timer resets
-        if (status === 'idle') {
-          resetBells()
-          bellSchedulerRef.current?.reset()
-        }
-      },
+      // Update store with current time for other components
+      callbacksRef.current.updateNow(state.lastUpdateTime)
       
-      onFinish: (state: TimerEngineState) => {
-        // Timer finished
-        updateNow(state.lastUpdateTime)
+      // Check bells during timer tick
+      if (bellSchedulerRef.current && state.status === 'running') {
+        bellSchedulerRef.current.checkBells(
+          state.remainingMs,
+          callbacksRef.current.settings,
+          callbacksRef.current.bells
+        )
+      }
+      
+      // Reset bells when timer resets
+      if (state.status === 'idle') {
+        callbacksRef.current.resetBells()
+        bellSchedulerRef.current?.reset()
       }
     })
 
-    engineRef.current = engine
-
-    return () => {
-      engine.destroy()
-    }
-  }, [updateNow, triggerBell, resetBells, settings, bells])
+    return unsubscribe
+  }, [])
 
   // Sync duration changes from store to engine
   useEffect(() => {
-    if (engineRef.current) {
-      engineRef.current.setDuration(timer.durationMs)
+    const currentState = timerSingleton.getState()
+    if (currentState && currentState.durationMs !== timer.durationMs) {
+      timerSingleton.setDuration(timer.durationMs)
     }
   }, [timer.durationMs])
 
@@ -128,27 +154,33 @@ export function useTimer(): UseTimerReturn {
 
   // Timer control functions
   const start = useCallback(() => {
-    engineRef.current?.start()
+    timerSingleton.start()
   }, [])
 
   const pause = useCallback(() => {
-    engineRef.current?.pause()
+    timerSingleton.pause()
   }, [])
 
   const resume = useCallback(() => {
-    engineRef.current?.resume()
+    timerSingleton.resume()
   }, [])
 
   const reset = useCallback(() => {
-    engineRef.current?.reset()
+    timerSingleton.reset()
     bellSchedulerRef.current?.reset()
     resetBells()
   }, [resetBells])
 
   const setDuration = useCallback((ms: Millis) => {
-    // Update both store and engine
+    // 現在の値と同じ場合は更新をスキップ
+    const currentState = timerSingleton.getState()
+    if (currentState && currentState.durationMs === ms) {
+      return
+    }
+    
+    // 値が異なる場合のみ更新
     setStoreDuration(ms)
-    engineRef.current?.setDuration(ms)
+    timerSingleton.setDuration(ms)
   }, [setStoreDuration])
 
   // Bell control functions
@@ -166,16 +198,7 @@ export function useTimer(): UseTimerReturn {
 
   const isAudioReady = bellSchedulerRef.current?.isAudioReady() ?? false
 
-  // Get current engine state
-  const engineState = engineRef.current?.getState() || {
-    status: 'idle' as TimerStatus,
-    durationMs: timer.durationMs,
-    elapsedMs: 0,
-    remainingMs: timer.durationMs,
-    pauseAccumulatedMs: 0,
-    lastUpdateTime: performance.now(),
-    precisionDriftMs: 0
-  }
+  // engineState is now managed as React state above
 
   return {
     // Current state - prefer engine state for real-time values, store for duration
