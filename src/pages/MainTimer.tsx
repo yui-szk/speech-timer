@@ -2,7 +2,7 @@ import { TimeDisplay, CircularProgress, Controls, BellScheduleStrip, StartAndNow
 
 const MainTimer = () => {
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-white from-80% to-[#a6d5cd] overflow-hidden" role="main">
+    <main className="min-h-screen bg-gradient-to-b from-white from-80% to-[#a6d5cd] overflow-hidden" role="main">
       {/* Skip link for keyboard navigation */}
       <a
         href="#timer-controls"
@@ -13,7 +13,7 @@ const MainTimer = () => {
 
       {/* Settings Button */}
       <button className="absolute right-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-mint-500 rounded-lg">
-        <span className="material-symbols text-xl">settings</span>
+        <span className="material-symbols text-4xl text-[#A6D5CD]">settings</span>
       </button>
 
       {/* Main Timer Circle */}

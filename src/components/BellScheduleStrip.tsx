@@ -194,9 +194,9 @@ const BellItem: React.FC<BellItemProps> = memo(({
         aria-describedby={`${type}-switch-help`}
       >
         {enabled ? (
-          <span className="material-symbols">notifications_active</span>
+          <span className="material-symbols text-3xl">notifications_active</span>
         ) : (
-          <span className="material-symbols">notifications_off</span>
+          <span className="material-symbols text-3xl">notifications_off</span>
         )}
       </button>
     </div>

@@ -97,13 +97,13 @@ const Controls = memo(({ }: ControlsProps) => {
       {/* リセットボタン */}
       <button
         onClick={handleReset}
-        className="absolute left-[-2px] top-[2px] w-[42px] h-[49px] bg-transparent hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
+        className="absolute left-[-2px] top-[2px] w-[60px] h-[60px] bg-transparent hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
         aria-label="タイマーをリセット (R)"
         title="タイマーをリセット (R)"
         type="button"
         aria-describedby="reset-help"
       >
-        <span className="material-symbols text-[#68b2a0]">replay</span>
+        <span className="material-symbols text-[#68b2a0] text-5xl">replay</span>
       </button>
 
       {/* ベルボタン */}
@@ -115,7 +115,7 @@ const Controls = memo(({ }: ControlsProps) => {
         type="button"
         aria-describedby="bell-test-help"
       >
-        <span className="material-symbols text-yellow-500 hover:bg-yellow-50">room_service</span>
+        <span className="material-symbols text-yellow-500 hover:bg-yellow-50 text-5xl">room_service</span>
       </button>
 
       {/* 再生/一時停止ボタン */}
@@ -124,8 +124,7 @@ const Controls = memo(({ }: ControlsProps) => {
         disabled={isFinished}
         className={`absolute left-[169px] top-0 w-[60px] h-[60px] rounded-full flex items-center justify-center transition-colors duration-150 focus-ring ${
           isFinished
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-[#68b2a0] hover:bg-[#5a9b8a] active:bg-[#4d8577]'
+
         }`}
         aria-label={
           isPlaying
@@ -147,10 +146,10 @@ const Controls = memo(({ }: ControlsProps) => {
       >
         {isPlaying ? (
           // 一時停止アイコン
-          <span className="material-symbols text-white text-2xl">pause</span>
+          <span className="material-symbols text-[#68b2a0] hover:text-[#5a9b8a] active:text-[#4d8577] text-5xl">pause</span>
         ) : (
           // 再生アイコン
-          <span className="material-symbols text-white text-2xl">play_arrow</span>
+          <span className="material-symbols text-[#68b2a0] hover:text-[#5a9b8a] active:text-[#4d8577] text-5xl">play_arrow</span>
         )}
       </button>
       
