@@ -91,7 +91,6 @@ const Controls = memo(({ }: ControlsProps) => {
   // ボタンの状態を決定
   const isPlaying = status === 'running'
   const isFinished = status === 'finished'
-  const canPlay = status === 'idle' || status === 'paused'
 
   return (
     <div className="relative w-[229px] h-[60px]" role="group" aria-label="タイマーコントロール">
@@ -104,20 +103,7 @@ const Controls = memo(({ }: ControlsProps) => {
         type="button"
         aria-describedby="reset-help"
       >
-        <svg
-          className="w-6 h-6 text-[#68b2a0]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
+        <span className="material-symbols text-[#68b2a0]">replay</span>
       </button>
 
       {/* ベルボタン */}
@@ -160,21 +146,11 @@ const Controls = memo(({ }: ControlsProps) => {
         aria-pressed={isPlaying}
       >
         {isPlaying ? (
-          // 一時停止アイコン（2つの縦線）
-          <div className="flex space-x-1">
-            <div className="w-2 h-6 bg-white rounded-sm"></div>
-            <div className="w-2 h-6 bg-white rounded-sm"></div>
-          </div>
+          // 一時停止アイコン
+          <span className="material-symbols text-white text-2xl">pause</span>
         ) : (
-          // 再生アイコン（三角形）
-          <svg
-            className="w-6 h-6 text-white ml-1"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
+          // 再生アイコン
+          <span className="material-symbols text-white text-2xl">play_arrow</span>
         )}
       </button>
       
