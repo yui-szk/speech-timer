@@ -128,34 +128,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
   }, [isEditing])
 
   return (
-    <div className="flex items-center justify-between py-2">
-      {/* ベルラベルとトグルスイッチ */}
-      <div className="flex items-center space-x-3">
-        <span className={`text-subheadline font-medium ${enabled ? 'text-gray-900' : 'text-gray-400'}`}>
-          {label}
-        </span>
-        
-        {/* トグルスイッチ */}
-        <button
-          onClick={handleToggle}
-          className={`
-            relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-ring
-            ${enabled ? 'bg-mint-600' : 'bg-gray-200'}
-          `}
-          role="switch"
-          aria-checked={enabled}
-          aria-label={`${label}を${enabled ? '無効' : '有効'}にする`}
-          aria-describedby={`${type}-switch-help`}
-        >
-          <span
-            className={`
-              inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-              ${enabled ? 'translate-x-6' : 'translate-x-1'}
-            `}
-          />
-        </button>
-      </div>
-
+    <div className="flex items-center justify-between w-full h-[50px]">
       {/* 時間表示・編集 */}
       <div className="flex-shrink-0">
         {isEditing ? (
@@ -168,8 +141,8 @@ const BellItem: React.FC<BellItemProps> = memo(({
               onKeyDown={handleKeyDown}
               onBlur={handleSubmit}
               className={`
-                font-mono text-subheadline text-center bg-transparent border border-mint-300
-                rounded px-2 py-1 w-16 focus:outline-none focus:border-mint-500
+                font-normal text-[32px] text-[#2c6975] text-center bg-transparent border border-mint-300
+                rounded px-2 py-1 w-20 focus:outline-none focus:border-mint-500
                 focus:ring-1 focus:ring-mint-200
                 ${error ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}
               `}
@@ -177,6 +150,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
               maxLength={5}
               aria-label={`${label}の時間を編集`}
               aria-describedby={error ? `${type}-error` : undefined}
+              style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
             />
             {error && (
               <div 
@@ -193,18 +167,41 @@ const BellItem: React.FC<BellItemProps> = memo(({
             onClick={handleTimeClick}
             disabled={!enabled}
             className={`
-              font-mono text-subheadline px-2 py-1 rounded transition-colors focus-ring
+              font-normal text-[32px] px-2 py-1 rounded transition-colors focus-ring text-[#2c6975]
               ${enabled 
-                ? 'text-mint-600 hover:text-mint-700 hover:bg-mint-50 cursor-pointer' 
-                : 'text-gray-400 cursor-not-allowed'
+                ? 'hover:opacity-80 cursor-pointer' 
+                : 'opacity-50 cursor-not-allowed'
               }
             `}
             aria-label={`${label}の時間 ${displayTime}${enabled ? '。クリックして編集' : '。無効'}`}
+            style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
             {displayTime}
           </button>
         )}
       </div>
+
+      {/* ベルアイコン */}
+      <button
+        onClick={handleToggle}
+        className={`
+          w-8 h-8 flex items-center justify-center rounded transition-colors focus-ring
+          ${enabled ? 'text-yellow-500 hover:bg-yellow-50' : 'text-gray-400 hover:bg-gray-50'}
+        `}
+        role="switch"
+        aria-checked={enabled}
+        aria-label={`${label}を${enabled ? '無効' : '有効'}にする`}
+        aria-describedby={`${type}-switch-help`}
+      >
+        <svg
+          className="w-6 h-6"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 10.5C21 10.5 20.75 10.75 20.5 11C20.25 11.25 20 11.5 20 11.5V12.5C20 12.5 20.25 12.75 20.5 13C20.75 13.25 21 13.5 21 13.5C21.3 13.4 21.5 13.1 21.5 12.75V11.25C21.5 10.9 21.3 10.6 21 10.5ZM3 10.5C2.7 10.6 2.5 10.9 2.5 11.25V12.75C2.5 13.1 2.7 13.4 3 13.5C3 13.5 3.25 13.25 3.5 13C3.75 12.75 4 12.5 4 12.5V11.5C4 11.5 3.75 11.25 3.5 11C3.25 10.75 3 10.5 3 10.5ZM9.5 6.5C9.5 6.5 9.4 6.6 9.25 6.75C8.9 7.1 8.4 7.6 8.4 8.4V15.6C8.4 16.4 8.9 16.9 9.25 17.25C9.4 17.4 9.5 17.5 9.5 17.5H14.5C14.5 17.5 14.6 17.4 14.75 17.25C15.1 16.9 15.6 16.4 15.6 15.6V8.4C15.6 7.6 15.1 7.1 14.75 6.75C14.6 6.6 14.5 6.5 14.5 6.5H9.5ZM12 20C10.9 20 10 20.9 10 22H14C14 20.9 13.1 20 12 20Z"/>
+        </svg>
+      </button>
     </div>
   )
 })
@@ -234,55 +231,33 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = memo(({ className = 
   }, [settings.bellEnabled, updateSettings])
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-4 ${className}`}>
-      <div className="flex items-center space-x-2 mb-3">
-        <div className="w-5 h-5 bg-accent-400 rounded-full flex items-center justify-center">
-          <svg 
-            className="w-3 h-3 text-white" 
-            fill="currentColor" 
-            viewBox="0 0 20 20"
-            aria-hidden="true"
-          >
-            <path fillRule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <h3 className="text-subheadline font-medium text-gray-900">ベル設定</h3>
-      </div>
+    <div className={`flex flex-col gap-2 ${className}`}>
+      <BellItem
+        type="first"
+        label="1令"
+        timeMs={settings.bellTimesMs.first}
+        enabled={settings.bellEnabled.first}
+        onTimeChange={handleTimeChange}
+        onToggle={handleToggle}
+      />
       
-      <div className="space-y-1">
-        <BellItem
-          type="first"
-          label="1令"
-          timeMs={settings.bellTimesMs.first}
-          enabled={settings.bellEnabled.first}
-          onTimeChange={handleTimeChange}
-          onToggle={handleToggle}
-        />
-        
-        <BellItem
-          type="second"
-          label="2令"
-          timeMs={settings.bellTimesMs.second}
-          enabled={settings.bellEnabled.second}
-          onTimeChange={handleTimeChange}
-          onToggle={handleToggle}
-        />
-        
-        <BellItem
-          type="third"
-          label="3令"
-          timeMs={settings.bellTimesMs.third}
-          enabled={settings.bellEnabled.third}
-          onTimeChange={handleTimeChange}
-          onToggle={handleToggle}
-        />
-      </div>
+      <BellItem
+        type="second"
+        label="2令"
+        timeMs={settings.bellTimesMs.second}
+        enabled={settings.bellEnabled.second}
+        onTimeChange={handleTimeChange}
+        onToggle={handleToggle}
+      />
       
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <p className="text-caption1 text-gray-500 text-center">
-          残り時間がベル時間に到達すると音が鳴ります
-        </p>
-      </div>
+      <BellItem
+        type="third"
+        label="3令"
+        timeMs={settings.bellTimesMs.third}
+        enabled={settings.bellEnabled.third}
+        onTimeChange={handleTimeChange}
+        onToggle={handleToggle}
+      />
       
       {/* Hidden help text for screen readers */}
       <div className="sr-only">

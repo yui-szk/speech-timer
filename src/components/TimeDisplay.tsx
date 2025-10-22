@@ -120,16 +120,14 @@ const TimeDisplay: React.FC<TimeDisplayProps> = memo(({ className = '' }) => {
 
   const displayClasses = `
     ${baseClasses}
-    text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl
-    text-mint-600 cursor-pointer hover:text-mint-700
+    text-[64px] font-normal text-[#2c6975] cursor-pointer hover:opacity-80
     ${status === 'running' ? 'cursor-not-allowed opacity-75' : ''}
     ${status === 'finished' ? 'text-red-500' : ''}
   `
 
   const inputClasses = `
     ${baseClasses}
-    text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl
-    text-mint-600 bg-transparent border-2 border-mint-300
+    text-[64px] font-normal text-[#2c6975] bg-transparent border-2 border-mint-300
     rounded-lg px-4 py-2 focus:outline-none focus:border-mint-500
     focus:ring-2 focus:ring-mint-200
     ${error ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}

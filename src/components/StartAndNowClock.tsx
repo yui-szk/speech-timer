@@ -64,12 +64,22 @@ const StartAndNowClock = memo(({ className = '' }: StartAndNowClockProps) => {
   const currentTimeText = useMemo(() => formatTime(currentTime), [currentTime, formatTime])
 
   return (
-    <div className={`text-center ${className}`}>
-      <div className="text-caption1 text-gray-500 mb-1">
-        開始時刻・現在時刻
+    <div className={`flex justify-between w-full ${className}`}>
+      <div className="text-left">
+        <div className="text-[20px] font-normal text-[#2c6975] mb-2" style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}>
+          start
+        </div>
+        <div className="text-[32px] font-normal text-[#2c6975]" style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}>
+          {startTimeText}
+        </div>
       </div>
-      <div className="text-subheadline text-gray-700">
-        {startTimeText} - {currentTimeText}
+      <div className="text-left">
+        <div className="text-[20px] font-normal text-[#2c6975] mb-2" style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}>
+          now
+        </div>
+        <div className="text-[32px] font-normal text-[#2c6975]" style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}>
+          {currentTimeText}
+        </div>
       </div>
     </div>
   )

@@ -70,7 +70,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
   const strokeDasharray = circumference
   const strokeDashoffset = circumference - (progressPercentage / 100) * circumference
 
-  // Determine colors based on timer status and progress
+  // Determine colors based on timer status and progress - matching Figma design
   const getProgressColor = () => {
     if (timer.status === 'finished') {
       return 'stroke-red-500'
@@ -78,11 +78,11 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
     if (timer.status === 'paused') {
       return 'stroke-yellow-500'
     }
-    return 'stroke-mint-500'
+    return 'stroke-[#68b2a0]' // Figma design color
   }
 
   const getBackgroundColor = () => {
-    return 'stroke-gray-200'
+    return 'stroke-gray-300' // Slightly darker for better visibility
   }
 
   const containerClasses = responsive 

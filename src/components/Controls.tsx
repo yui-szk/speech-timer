@@ -94,18 +94,18 @@ const Controls = memo(({}: ControlsProps) => {
   const canPlay = status === 'idle' || status === 'paused'
 
   return (
-    <div className="flex justify-center space-x-4" role="group" aria-label="タイマーコントロール">
+    <div className="relative w-[229px] h-[60px]" role="group" aria-label="タイマーコントロール">
       {/* リセットボタン */}
       <button
         onClick={handleReset}
-        className="w-tap h-tap bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
+        className="absolute left-[-2px] top-[2px] w-[42px] h-[49px] bg-transparent hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
         aria-label="タイマーをリセット (R)"
         title="タイマーをリセット (R)"
         type="button"
         aria-describedby="reset-help"
       >
         <svg
-          className="w-6 h-6 text-gray-700"
+          className="w-6 h-6 text-[#68b2a0]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -123,25 +123,19 @@ const Controls = memo(({}: ControlsProps) => {
       {/* ベルテストボタン */}
       <button
         onClick={handleBellTest}
-        className="w-tap h-tap bg-accent-400 hover:bg-accent-500 active:bg-accent-600 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring-accent"
+        className="absolute left-[81px] top-0 w-[60px] h-[60px] bg-transparent hover:bg-yellow-100 active:bg-yellow-200 rounded-full flex items-center justify-center transition-colors duration-150 focus-ring-accent"
         aria-label="ベル音をテスト (B)"
         title="ベル音をテスト (B)"
         type="button"
         aria-describedby="bell-test-help"
       >
         <svg
-          className="w-6 h-6 text-white"
-          fill="none"
-          stroke="currentColor"
+          className="w-8 h-8 text-yellow-500"
+          fill="currentColor"
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-5 5v-5zM4.868 19.718A8.966 8.966 0 003 12a8.966 8.966 0 001.868-7.718M6.343 6.343a8.966 8.966 0 000 11.314m2.829-2.829a4.966 4.966 0 000-5.656"
-          />
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 10.5C21 10.5 20.75 10.75 20.5 11C20.25 11.25 20 11.5 20 11.5V12.5C20 12.5 20.25 12.75 20.5 13C20.75 13.25 21 13.5 21 13.5C21.3 13.4 21.5 13.1 21.5 12.75V11.25C21.5 10.9 21.3 10.6 21 10.5ZM3 10.5C2.7 10.6 2.5 10.9 2.5 11.25V12.75C2.5 13.1 2.7 13.4 3 13.5C3 13.5 3.25 13.25 3.5 13C3.75 12.75 4 12.5 4 12.5V11.5C4 11.5 3.75 11.25 3.5 11C3.25 10.75 3 10.5 3 10.5ZM9.5 6.5C9.5 6.5 9.4 6.6 9.25 6.75C8.9 7.1 8.4 7.6 8.4 8.4V15.6C8.4 16.4 8.9 16.9 9.25 17.25C9.4 17.4 9.5 17.5 9.5 17.5H14.5C14.5 17.5 14.6 17.4 14.75 17.25C15.1 16.9 15.6 16.4 15.6 15.6V8.4C15.6 7.6 15.1 7.1 14.75 6.75C14.6 6.6 14.5 6.5 14.5 6.5H9.5ZM12 20C10.9 20 10 20.9 10 22H14C14 20.9 13.1 20 12 20Z"/>
         </svg>
       </button>
 
@@ -149,10 +143,10 @@ const Controls = memo(({}: ControlsProps) => {
       <button
         onClick={handlePlayPause}
         disabled={isFinished}
-        className={`w-tap h-tap rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring ${
+        className={`absolute left-[169px] top-0 w-[60px] h-[60px] rounded-full flex items-center justify-center transition-colors duration-150 focus-ring ${
           isFinished
             ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-mint-500 hover:bg-mint-600 active:bg-mint-700'
+            : 'bg-[#68b2a0] hover:bg-[#5a9b8a] active:bg-[#4d8577]'
         }`}
         aria-label={
           isPlaying
@@ -173,17 +167,13 @@ const Controls = memo(({}: ControlsProps) => {
         aria-pressed={isPlaying}
       >
         {isPlaying ? (
-          // 一時停止アイコン
-          <svg
-            className="w-6 h-6 text-white"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-          </svg>
+          // 一時停止アイコン（2つの縦線）
+          <div className="flex space-x-1">
+            <div className="w-2 h-6 bg-white rounded-sm"></div>
+            <div className="w-2 h-6 bg-white rounded-sm"></div>
+          </div>
         ) : (
-          // 再生アイコン
+          // 再生アイコン（三角形）
           <svg
             className="w-6 h-6 text-white ml-1"
             fill="currentColor"
