@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { formatMsToTime, parseTimeToMs, validateTimeFormat } from '../utils/time'
+import { formatMsToTime, parseTimeToMs } from '../utils/time'
+import { validateAndParse } from '../utils/validation'
 import { useTimer } from '../hooks/useTimer'
 
 
@@ -49,27 +50,17 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
 
   // 編集を確定
   const handleSubmit = () => {
-    const trimmedValue = inputValue.trim()
+    // バリデーションを実行
+    const validationResult = validateAndParse(inputValue)
     
-    if (!validateTimeFormat(trimmedValue)) {
-      setError('mm:ss形式で入力してください（例：05:30）')
+    if (!validationResult.isValid) {
+      setError(validationResult.error)
       return
     }
 
-    const parsedMs = parseTimeToMs(trimmedValue)
-    if (parsedMs === null) {
-      setError('59:59以下の時間を入力してください')
-      return
-    }
-
-    if (parsedMs === 0) {
-      setError('0より大きい時間を入力してください')
-      return
-    }
-
-    // hasChangesフラグを使用して値変更検出を行い、変更がある場合のみ更新
-    if (hasChanges && hasValueChanged(originalValue, trimmedValue)) {
-      setDuration(parsedMs)
+    // 値変更検出（バリデーション成功後に実行）
+    if (hasChanges && hasValueChanged(originalValue, inputValue.trim())) {
+      setDuration(validationResult.parsedValue!)
     }
     
     setIsEditing(false)
@@ -102,21 +93,15 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
     const value = e.target.value
     setInputValue(value)
     
-    // 値が変更されたかどうかをhasChangesフラグで追跡
+    // 値変更検出（バリデーションとは独立して実行）
     setHasChanges(hasValueChanged(originalValue, value))
     
-    // リアルタイムバリデーション
-    if (value && !validateTimeFormat(value)) {
-      setError('mm:ss形式で入力してください（例：05:30）')
-    } else if (value && validateTimeFormat(value)) {
-      const parsedMs = parseTimeToMs(value)
-      if (parsedMs === null) {
-        setError('59:59以下の時間を入力してください')
-      } else {
-        setError(null)
-      }
-    } else {
+    // リアルタイムバリデーション（空の値の場合はエラーをクリア）
+    if (!value.trim()) {
       setError(null)
+    } else {
+      const validationResult = validateAndParse(value)
+      setError(validationResult.error)
     }
   }
 

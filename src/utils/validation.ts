@@ -1,8 +1,58 @@
 import type { TimerSettings, TimerState, BellState, Millis, ProgressMode } from '../types'
+import { validateTimeFormat, parseTimeToMs } from './time'
 
 /**
  * Data model validation utilities for the Speech Timer application
  */
+
+/**
+ * Validation result structure for time input
+ */
+export interface ValidationResult {
+  isValid: boolean
+  error: string | null
+  parsedValue: Millis | null
+}
+
+/**
+ * Validates and parses time input string
+ * @param input - Time input string to validate and parse
+ * @returns Structured validation result
+ */
+export function validateAndParse(input: string): ValidationResult {
+  const trimmed = input.trim()
+  
+  if (!validateTimeFormat(trimmed)) {
+    return {
+      isValid: false,
+      error: 'mm:ss形式で入力してください（例：05:30）',
+      parsedValue: null
+    }
+  }
+  
+  const parsedMs = parseTimeToMs(trimmed)
+  if (parsedMs === null) {
+    return {
+      isValid: false,
+      error: '59:59以下の時間を入力してください',
+      parsedValue: null
+    }
+  }
+  
+  if (parsedMs === 0) {
+    return {
+      isValid: false,
+      error: '0より大きい時間を入力してください',
+      parsedValue: null
+    }
+  }
+  
+  return {
+    isValid: true,
+    error: null,
+    parsedValue: parsedMs
+  }
+}
 
 /**
  * Validates TimerSettings object

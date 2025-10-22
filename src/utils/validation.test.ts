@@ -5,7 +5,8 @@ import {
   validateBellState,
   createDefaultTimerSettings,
   createDefaultTimerState,
-  createDefaultBellState
+  createDefaultBellState,
+  validateAndParse
 } from './validation'
 import type { TimerSettings, TimerState, BellState } from '../types'
 
@@ -246,6 +247,110 @@ describe('Validation Utilities', () => {
       expect(defaults.triggered.second).toBe(false)
       expect(defaults.triggered.third).toBe(false)
       expect(defaults.lastCheckMs).toBe(0)
+    })
+  })
+
+  describe('validateAndParse', () => {
+    it('should validate and parse correct time format', () => {
+      const result = validateAndParse('05:30')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(5 * 60 * 1000 + 30 * 1000)
+    })
+
+    it('should validate and parse single digit minutes', () => {
+      const result = validateAndParse('5:30')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(5 * 60 * 1000 + 30 * 1000)
+    })
+
+    it('should validate and parse zero seconds', () => {
+      const result = validateAndParse('10:00')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(10 * 60 * 1000)
+    })
+
+    it('should handle whitespace in input', () => {
+      const result = validateAndParse('  05:30  ')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(5 * 60 * 1000 + 30 * 1000)
+    })
+
+    it('should reject invalid time format', () => {
+      const testCases = [
+        '5',
+        '5:',
+        ':30',
+        '5:3',
+        '5:300',
+        'abc',
+        '5:60',
+        '60:30',
+        '5-30',
+        '5.30'
+      ]
+
+      testCases.forEach(input => {
+        const result = validateAndParse(input)
+        expect(result.isValid).toBe(false)
+        expect(result.error).toBe('mm:ss形式で入力してください（例：05:30）')
+        expect(result.parsedValue).toBeNull()
+      })
+    })
+
+    it('should reject zero time', () => {
+      const result = validateAndParse('00:00')
+      
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('0より大きい時間を入力してください')
+      expect(result.parsedValue).toBeNull()
+    })
+
+    it('should reject time over 59:59', () => {
+      const result = validateAndParse('60:00')
+      
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('mm:ss形式で入力してください（例：05:30）')
+      expect(result.parsedValue).toBeNull()
+    })
+
+    it('should accept maximum valid time 59:59', () => {
+      const result = validateAndParse('59:59')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(59 * 60 * 1000 + 59 * 1000)
+    })
+
+    it('should accept minimum valid time 00:01', () => {
+      const result = validateAndParse('00:01')
+      
+      expect(result.isValid).toBe(true)
+      expect(result.error).toBeNull()
+      expect(result.parsedValue).toBe(1000)
+    })
+
+    it('should handle empty string', () => {
+      const result = validateAndParse('')
+      
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('mm:ss形式で入力してください（例：05:30）')
+      expect(result.parsedValue).toBeNull()
+    })
+
+    it('should handle whitespace-only string', () => {
+      const result = validateAndParse('   ')
+      
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('mm:ss形式で入力してください（例：05:30）')
+      expect(result.parsedValue).toBeNull()
     })
   })
 })
