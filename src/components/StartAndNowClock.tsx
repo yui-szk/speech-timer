@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo, useMemo } from 'react'
 import { useTimerState } from '../store'
 
 interface StartAndNowClockProps {
   className?: string
 }
 
-const StartAndNowClock = ({ className = '' }: StartAndNowClockProps) => {
+const StartAndNowClock = memo(({ className = '' }: StartAndNowClockProps) => {
   const timer = useTimerState()
   const [currentTime, setCurrentTime] = useState(new Date())
 
@@ -18,14 +18,16 @@ const StartAndNowClock = ({ className = '' }: StartAndNowClockProps) => {
     return () => clearInterval(interval)
   }, [])
 
-  // Format time using Intl.DateTimeFormat for localization
-  const formatTime = (date: Date): string => {
-    return new Intl.DateTimeFormat('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }).format(date)
-  }
+  // Format time using Intl.DateTimeFormat for localization - memoized for performance
+  const formatter = useMemo(() => new Intl.DateTimeFormat('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }), [])
+
+  const formatTime = useMemo(() => (date: Date): string => {
+    return formatter.format(date)
+  }, [formatter])
 
   // Calculate start time based on timer state
   const getStartTime = (): Date | null => {
@@ -41,9 +43,9 @@ const StartAndNowClock = ({ className = '' }: StartAndNowClockProps) => {
     return actualStartTime
   }
 
-  const startTime = getStartTime()
-  const startTimeText = startTime ? formatTime(startTime) : '--:--'
-  const currentTimeText = formatTime(currentTime)
+  const startTime = useMemo(() => getStartTime(), [timer.startEpochMs])
+  const startTimeText = useMemo(() => startTime ? formatTime(startTime) : '--:--', [startTime, formatTime])
+  const currentTimeText = useMemo(() => formatTime(currentTime), [currentTime, formatTime])
 
   return (
     <div className={`text-center ${className}`}>
@@ -55,6 +57,8 @@ const StartAndNowClock = ({ className = '' }: StartAndNowClockProps) => {
       </div>
     </div>
   )
-}
+})
+
+StartAndNowClock.displayName = 'StartAndNowClock'
 
 export default StartAndNowClock

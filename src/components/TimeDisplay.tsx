@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, memo } from 'react'
 import { formatMsToTime, parseTimeToMs } from '../utils/time'
 import { validateAndParse } from '../utils/validation'
 import { useTimer } from '../hooks/useTimer'
@@ -8,7 +8,7 @@ interface TimeDisplayProps {
   className?: string
 }
 
-const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
+const TimeDisplay: React.FC<TimeDisplayProps> = memo(({ className = '' }) => {
   const { status, remainingMs, setDuration } = useTimer()
   
   const [isEditing, setIsEditing] = useState(false)
@@ -120,7 +120,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
 
   const displayClasses = `
     ${baseClasses}
-    text-4xl sm:text-5xl md:text-6xl lg:text-7xl
+    text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl
     text-mint-600 cursor-pointer hover:text-mint-700
     ${status === 'running' ? 'cursor-not-allowed opacity-75' : ''}
     ${status === 'finished' ? 'text-red-500' : ''}
@@ -128,7 +128,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
 
   const inputClasses = `
     ${baseClasses}
-    text-4xl sm:text-5xl md:text-6xl lg:text-7xl
+    text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl
     text-mint-600 bg-transparent border-2 border-mint-300
     rounded-lg px-4 py-2 focus:outline-none focus:border-mint-500
     focus:ring-2 focus:ring-mint-200
@@ -199,6 +199,8 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
       </div>
     </div>
   )
-}
+})
+
+TimeDisplay.displayName = 'TimeDisplay'
 
 export default TimeDisplay

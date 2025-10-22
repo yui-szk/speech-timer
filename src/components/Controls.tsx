@@ -1,11 +1,11 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, memo } from 'react'
 import { useTimer } from '../hooks/useTimer'
 
 interface ControlsProps {
   // No props needed - bell test is handled internally
 }
 
-const Controls = ({}: ControlsProps) => {
+const Controls = memo(({}: ControlsProps) => {
   const { 
     status, 
     start, 
@@ -203,6 +203,8 @@ const Controls = ({}: ControlsProps) => {
       </div>
     </div>
   )
-}
+})
+
+Controls.displayName = 'Controls'
 
 export default Controls

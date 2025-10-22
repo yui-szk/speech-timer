@@ -4,6 +4,7 @@
  */
 
 import type { Millis } from '../types'
+import { performanceMonitor } from './performance-monitor'
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished'
 
@@ -20,6 +21,7 @@ export interface TimerEngineState {
 
 export interface TimerEngineCallbacks {
   onTick?: (state: TimerEngineState) => void
+  onDisplayUpdate?: (state: TimerEngineState) => void // For throttled display updates
   onStatusChange?: (status: TimerStatus, state: TimerEngineState) => void
   onFinish?: (state: TimerEngineState) => void
 }
@@ -31,6 +33,10 @@ export class TimerEngine {
   private lastRafTime: number = 0
   private precisionCheckInterval: number = 1000 // Check precision every 1 second
   private lastPrecisionCheck: number = 0
+  
+  // Display update throttling (250ms for performance)
+  private displayUpdateInterval: number = 250
+  private lastDisplayUpdate: number = 0
 
   constructor(durationMs: Millis, callbacks: TimerEngineCallbacks = {}) {
     this.callbacks = callbacks
@@ -155,6 +161,7 @@ export class TimerEngine {
   private startRafLoop(): void {
     this.lastRafTime = performance.now()
     this.lastPrecisionCheck = this.lastRafTime
+    this.lastDisplayUpdate = this.lastRafTime
     this.rafId = requestAnimationFrame(this.rafTick)
   }
 
@@ -174,6 +181,9 @@ export class TimerEngine {
   private rafTick = (timestamp: number): void => {
     if (this.state.status !== 'running') return
 
+    // Record frame for performance monitoring
+    performanceMonitor.recordFrame()
+
     this.updateTimeCalculations(timestamp)
     this.checkPrecision(timestamp)
 
@@ -192,7 +202,14 @@ export class TimerEngine {
       return
     }
 
+    // Always call onTick for high-frequency updates (60fps)
     this.callbacks.onTick?.(this.state)
+    
+    // Throttled display updates (250ms) for performance
+    if (timestamp - this.lastDisplayUpdate >= this.displayUpdateInterval) {
+      this.callbacks.onDisplayUpdate?.(this.state)
+      this.lastDisplayUpdate = timestamp
+    }
     
     // Continue RAF loop only if still running
     if (this.state.status === 'running') {
@@ -229,6 +246,9 @@ export class TimerEngine {
     
     // Calculate drift as difference between theoretical and actual elapsed time
     this.state.precisionDriftMs = Math.abs(theoreticalElapsed - actualElapsed)
+    
+    // Record timing accuracy for performance monitoring
+    performanceMonitor.recordTimingAccuracy(theoreticalElapsed, actualElapsed)
     
     this.lastPrecisionCheck = timestamp
   }

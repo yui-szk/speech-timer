@@ -9,6 +9,7 @@ class TimerSingleton {
   private static instance: TimerSingleton | null = null
   private engine: TimerEngine | null = null
   private subscribers: Set<(state: TimerEngineState) => void> = new Set()
+  private displaySubscribers: Set<(state: TimerEngineState) => void> = new Set()
 
   private constructor() {}
 
@@ -29,12 +30,18 @@ class TimerSingleton {
         this.notifySubscribers(state)
       },
       
+      onDisplayUpdate: (state: TimerEngineState) => {
+        this.notifyDisplaySubscribers(state)
+      },
+      
       onStatusChange: (status: TimerStatus, state: TimerEngineState) => {
         this.notifySubscribers(state)
+        this.notifyDisplaySubscribers(state)
       },
       
       onFinish: (state: TimerEngineState) => {
         this.notifySubscribers(state)
+        this.notifyDisplaySubscribers(state)
       }
     })
   }
@@ -53,8 +60,26 @@ class TimerSingleton {
     }
   }
 
+  subscribeToDisplayUpdates(callback: (state: TimerEngineState) => void): () => void {
+    this.displaySubscribers.add(callback)
+    
+    // Immediately notify with current state
+    if (this.engine) {
+      callback(this.engine.getState())
+    }
+    
+    // Return unsubscribe function
+    return () => {
+      this.displaySubscribers.delete(callback)
+    }
+  }
+
   private notifySubscribers(state: TimerEngineState): void {
     this.subscribers.forEach(callback => callback(state))
+  }
+
+  private notifyDisplaySubscribers(state: TimerEngineState): void {
+    this.displaySubscribers.forEach(callback => callback(state))
   }
 
   getEngine(): TimerEngine | null {
@@ -91,6 +116,7 @@ class TimerSingleton {
       this.engine = null
     }
     this.subscribers.clear()
+    this.displaySubscribers.clear()
   }
 }
 

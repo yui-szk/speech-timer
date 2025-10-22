@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo, useMemo } from 'react'
 import { useTimerState, useSettings } from '../store'
 import type { Millis } from '../types'
 
@@ -9,22 +9,25 @@ interface CircularProgressProps {
   strokeWidth?: number
   /** Additional CSS classes */
   className?: string
+  /** Enable responsive sizing */
+  responsive?: boolean
 }
 
 /**
  * Circular progress bar component that displays timer progress
  * Supports both remaining time and elapsed time modes
  */
-export const CircularProgress: React.FC<CircularProgressProps> = ({
+export const CircularProgress: React.FC<CircularProgressProps> = memo(({
   size = 200,
   strokeWidth = 8,
-  className = ''
+  className = '',
+  responsive = true
 }) => {
   const timer = useTimerState()
   const settings = useSettings()
 
   // Calculate progress percentage based on mode
-  const progressPercentage = React.useMemo(() => {
+  const progressPercentage = useMemo(() => {
     if (timer.durationMs === 0) return 0
 
     const elapsed = calculateElapsedTime(timer)
@@ -60,12 +63,21 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
     return 'stroke-gray-200'
   }
 
+  const containerClasses = responsive 
+    ? `relative inline-flex items-center justify-center w-48 h-48 xs:w-52 xs:h-52 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 ${className}`
+    : `relative inline-flex items-center justify-center ${className}`
+
+  const svgClasses = responsive
+    ? "w-full h-full transform -rotate-90"
+    : "transform -rotate-90"
+
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div className={containerClasses}>
       <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90"
+        width={responsive ? undefined : size}
+        height={responsive ? undefined : size}
+        viewBox={responsive ? `0 0 ${size} ${size}` : undefined}
+        className={svgClasses}
         role="img"
         aria-label={`Timer progress: ${Math.round(progressPercentage)}%`}
       >
@@ -109,7 +121,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
 /**
  * Calculate elapsed time from timer state
  */
-function calculateElapsedTime(timer: typeof useTimerState extends () => infer T ? T : never): Millis {
+function calculateElapsedTime(timer: ReturnType<typeof useTimerState>): Millis {
   if (timer.status === 'idle') {
     return 0
   }
@@ -126,6 +138,8 @@ function calculateElapsedTime(timer: typeof useTimerState extends () => infer T 
   const totalElapsed = timer.pauseAccumulatedMs + sessionElapsed
   
   return Math.min(totalElapsed, timer.durationMs)
-}
+})
+
+CircularProgress.displayName = 'CircularProgress'
 
 export default CircularProgress

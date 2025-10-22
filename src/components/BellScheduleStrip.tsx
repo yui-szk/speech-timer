@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
 import { formatMsToTime, parseTimeToMs, validateTimeFormat } from '../utils/time'
 import { useSettings, useSettingsActions } from '../store'
 import type { Millis } from '../types'
@@ -18,7 +18,7 @@ interface BellItemProps {
   onToggle: (type: BellType, enabled: boolean) => void
 }
 
-const BellItem: React.FC<BellItemProps> = ({
+const BellItem: React.FC<BellItemProps> = memo(({
   type,
   label,
   timeMs,
@@ -207,31 +207,31 @@ const BellItem: React.FC<BellItemProps> = ({
       </div>
     </div>
   )
-}
+})
 
-const BellScheduleStrip: React.FC<BellScheduleStripProps> = ({ className = '' }) => {
+const BellScheduleStrip: React.FC<BellScheduleStripProps> = memo(({ className = '' }) => {
   const settings = useSettings()
   const { updateSettings } = useSettingsActions()
 
   // ベル時間の変更処理
-  const handleTimeChange = (type: BellType, timeMs: Millis) => {
+  const handleTimeChange = useCallback((type: BellType, timeMs: Millis) => {
     updateSettings({
       bellTimesMs: {
         ...settings.bellTimesMs,
         [type]: timeMs
       }
     })
-  }
+  }, [settings.bellTimesMs, updateSettings])
 
   // ベルの有効/無効切り替え処理
-  const handleToggle = (type: BellType, enabled: boolean) => {
+  const handleToggle = useCallback((type: BellType, enabled: boolean) => {
     updateSettings({
       bellEnabled: {
         ...settings.bellEnabled,
         [type]: enabled
       }
     })
-  }
+  }, [settings.bellEnabled, updateSettings])
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 p-4 ${className}`}>
@@ -292,6 +292,9 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = ({ className = '' })
       </div>
     </div>
   )
-}
+})
+
+BellItem.displayName = 'BellItem'
+BellScheduleStrip.displayName = 'BellScheduleStrip'
 
 export default BellScheduleStrip

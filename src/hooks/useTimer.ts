@@ -3,11 +3,12 @@
  * Provides high-precision timer functionality with state synchronization and bell scheduling
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import { type TimerEngineState, type TimerStatus } from '../utils/timer-engine'
 import { BellScheduler, type BellTriggerEvent } from '../utils/bell-scheduler'
 import { timerSingleton } from '../utils/timer-singleton'
 import { useAppStore } from '../store'
+import { performanceMonitor } from '../utils/performance-monitor'
 import type { Millis } from '../types'
 
 export interface UseTimerReturn {
@@ -115,6 +116,9 @@ export function useTimer(): UseTimerReturn {
     const unsubscribe = timerSingleton.subscribe((state: TimerEngineState) => {
       setEngineState({ ...state })
       
+      // Record render for performance monitoring
+      performanceMonitor.recordRender()
+      
       // Update store with current time for other components
       callbacksRef.current.updateNow(state.lastUpdateTime)
       
@@ -152,24 +156,17 @@ export function useTimer(): UseTimerReturn {
     }
   }, [settings.volume])
 
-  // Timer control functions
-  const start = useCallback(() => {
-    timerSingleton.start()
-  }, [])
-
-  const pause = useCallback(() => {
-    timerSingleton.pause()
-  }, [])
-
-  const resume = useCallback(() => {
-    timerSingleton.resume()
-  }, [])
-
-  const reset = useCallback(() => {
-    timerSingleton.reset()
-    bellSchedulerRef.current?.reset()
-    resetBells()
-  }, [resetBells])
+  // Timer control functions - memoized for performance
+  const timerControls = useMemo(() => ({
+    start: () => timerSingleton.start(),
+    pause: () => timerSingleton.pause(),
+    resume: () => timerSingleton.resume(),
+    reset: () => {
+      timerSingleton.reset()
+      bellSchedulerRef.current?.reset()
+      resetBells()
+    }
+  }), [resetBells])
 
   const setDuration = useCallback((ms: Millis) => {
     // 現在の値と同じ場合は更新をスキップ
@@ -183,20 +180,29 @@ export function useTimer(): UseTimerReturn {
     timerSingleton.setDuration(ms)
   }, [setStoreDuration])
 
-  // Bell control functions
-  const testBell = useCallback(async () => {
-    if (bellSchedulerRef.current) {
-      await bellSchedulerRef.current.testBell()
+  // Bell control functions - memoized for performance
+  const bellControls = useMemo(() => ({
+    testBell: async () => {
+      if (bellSchedulerRef.current) {
+        await bellSchedulerRef.current.testBell()
+      }
+    },
+    initializeAudio: async () => {
+      if (bellSchedulerRef.current) {
+        await bellSchedulerRef.current.initializeAudio()
+      }
     }
-  }, [])
-
-  const initializeAudio = useCallback(async () => {
-    if (bellSchedulerRef.current) {
-      await bellSchedulerRef.current.initializeAudio()
-    }
-  }, [])
+  }), [])
 
   const isAudioReady = bellSchedulerRef.current?.isAudioReady() ?? false
+
+  // Utility flags - memoized to prevent unnecessary re-renders
+  const statusFlags = useMemo(() => ({
+    isRunning: engineState.status === 'running',
+    isPaused: engineState.status === 'paused',
+    isIdle: engineState.status === 'idle',
+    isFinished: engineState.status === 'finished'
+  }), [engineState.status])
 
   // engineState is now managed as React state above
 
@@ -209,21 +215,18 @@ export function useTimer(): UseTimerReturn {
     precisionDriftMs: engineState.precisionDriftMs,
     
     // Controls
-    start,
-    pause,
-    resume,
-    reset,
+    start: timerControls.start,
+    pause: timerControls.pause,
+    resume: timerControls.resume,
+    reset: timerControls.reset,
     setDuration,
     
     // Bell controls
-    testBell,
-    initializeAudio,
+    testBell: bellControls.testBell,
+    initializeAudio: bellControls.initializeAudio,
     isAudioReady,
     
     // Utility flags
-    isRunning: engineState.status === 'running',
-    isPaused: engineState.status === 'paused',
-    isIdle: engineState.status === 'idle',
-    isFinished: engineState.status === 'finished'
+    ...statusFlags
   }
 }

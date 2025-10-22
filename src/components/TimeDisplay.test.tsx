@@ -282,7 +282,7 @@ describe('TimeDisplay', () => {
       render(<TimeDisplay />)
       
       const timeDisplay = screen.getByText('10:00')
-      expect(timeDisplay).toHaveClass('text-4xl', 'sm:text-5xl', 'md:text-6xl', 'lg:text-7xl')
+      expect(timeDisplay).toHaveClass('text-4xl', 'xs:text-5xl', 'sm:text-6xl', 'md:text-7xl', 'lg:text-8xl', 'xl:text-9xl')
     })
 
     it('カスタムクラス名を受け入れる', () => {

@@ -1,16 +1,25 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { memo, useCallback } from 'react';
 
-const Header = () => {
+const Header = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const isSettingsPage = location.pathname === '/settings';
+
+  const handleBackClick = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  const handleSettingsClick = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 py-3">
       <div className="container mx-auto max-w-md flex items-center justify-between">
         {isSettingsPage ? (
           <button
-            onClick={() => navigate('/')}
+            onClick={handleBackClick}
             className="flex items-center justify-center w-tap h-tap -ml-2 rounded-lg hover:bg-gray-50 focus-ring"
             aria-label="メイン画面に戻る"
           >
@@ -38,7 +47,7 @@ const Header = () => {
         
         {!isSettingsPage ? (
           <button
-            onClick={() => navigate('/settings')}
+            onClick={handleSettingsClick}
             className="flex items-center justify-center w-tap h-tap -mr-2 rounded-lg hover:bg-gray-50 focus-ring"
             aria-label="設定画面を開く"
           >
@@ -68,6 +77,8 @@ const Header = () => {
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

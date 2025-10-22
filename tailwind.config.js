@@ -49,6 +49,7 @@ export default {
       },
       // Accessibility-focused utilities
       screens: {
+        'xs': '475px',
         'reduce-motion': { 'raw': '(prefers-reduced-motion: reduce)' },
         'high-contrast': { 'raw': '(prefers-contrast: high)' },
       },

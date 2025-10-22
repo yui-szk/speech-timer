@@ -34,7 +34,7 @@ describe('Header', () => {
     expect(settingsButton).toHaveAttribute('aria-label', '設定画面を開く');
     
     // Check focus styles
-    expect(settingsButton).toHaveClass('focus:outline-none', 'focus:ring-2', 'focus:ring-mint-500');
+    expect(settingsButton).toHaveClass('focus-ring');
   });
 
   test('has proper tap target size', () => {
