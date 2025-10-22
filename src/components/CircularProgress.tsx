@@ -14,6 +14,28 @@ interface CircularProgressProps {
 }
 
 /**
+ * Calculate elapsed time from timer state
+ */
+function calculateElapsedTime(timer: ReturnType<typeof useTimerState>): Millis {
+  if (timer.status === 'idle') {
+    return 0
+  }
+
+  if (timer.status === 'finished') {
+    return timer.durationMs
+  }
+
+  // For running and paused states
+  const sessionElapsed = timer.startEpochMs 
+    ? timer.nowEpochMs - timer.startEpochMs 
+    : 0
+
+  const totalElapsed = timer.pauseAccumulatedMs + sessionElapsed
+  
+  return Math.min(totalElapsed, timer.durationMs)
+}
+
+/**
  * Circular progress bar component that displays timer progress
  * Supports both remaining time and elapsed time modes
  */
@@ -116,28 +138,6 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
       </div>
     </div>
   )
-}
-
-/**
- * Calculate elapsed time from timer state
- */
-function calculateElapsedTime(timer: ReturnType<typeof useTimerState>): Millis {
-  if (timer.status === 'idle') {
-    return 0
-  }
-
-  if (timer.status === 'finished') {
-    return timer.durationMs
-  }
-
-  // For running and paused states
-  const sessionElapsed = timer.startEpochMs 
-    ? timer.nowEpochMs - timer.startEpochMs 
-    : 0
-
-  const totalElapsed = timer.pauseAccumulatedMs + sessionElapsed
-  
-  return Math.min(totalElapsed, timer.durationMs)
 })
 
 CircularProgress.displayName = 'CircularProgress'
