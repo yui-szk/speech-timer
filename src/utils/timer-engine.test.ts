@@ -228,6 +228,41 @@ describe('TimerEngine', () => {
       // Remaining should be proportionally adjusted
       expect(state.remainingMs).toBeLessThanOrEqual(5000)
     })
+
+    it('should not update state when setting the same duration', () => {
+      const initialState = engine.getState()
+      const initialLastUpdateTime = initialState.lastUpdateTime
+      
+      // Set the same duration
+      engine.setDuration(10000)
+      
+      const newState = engine.getState()
+      expect(newState.durationMs).toBe(10000)
+      expect(newState.lastUpdateTime).toBe(initialLastUpdateTime) // Should not change
+    })
+
+    it('should skip time calculations when setting the same duration', () => {
+      mockPerformanceNow.mockReturnValue(0)
+      engine.start()
+      
+      // Run for 2 seconds
+      const rafCallback = mockRaf.mock.calls[0][0]
+      mockPerformanceNow.mockReturnValue(2000)
+      rafCallback(2000)
+      
+      const stateBeforeDuplicateSet = engine.getState()
+      
+      // Set the same duration (should be ignored)
+      mockPerformanceNow.mockReturnValue(3000) // Time has passed
+      engine.setDuration(10000) // Same as initial duration
+      
+      const stateAfterDuplicateSet = engine.getState()
+      
+      // State should remain exactly the same (no time calculations triggered)
+      expect(stateAfterDuplicateSet.elapsedMs).toBe(stateBeforeDuplicateSet.elapsedMs)
+      expect(stateAfterDuplicateSet.remainingMs).toBe(stateBeforeDuplicateSet.remainingMs)
+      expect(stateAfterDuplicateSet.lastUpdateTime).toBe(stateBeforeDuplicateSet.lastUpdateTime)
+    })
   })
 
   describe('Precision Monitoring', () => {

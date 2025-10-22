@@ -117,6 +117,11 @@ export class TimerEngine {
    * Set new duration (can be called while running)
    */
   setDuration(durationMs: Millis): void {
+    // 現在の値と同じ場合は早期リターン（重複更新防止）
+    if (this.state.durationMs === durationMs) {
+      return
+    }
+
     const oldDuration = this.state.durationMs
     const remainingRatio = this.state.remainingMs / oldDuration
     
