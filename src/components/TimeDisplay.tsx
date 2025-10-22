@@ -59,7 +59,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
     }
 
     // 値変更検出（バリデーション成功後に実行）
-    if (hasChanges && hasValueChanged(originalValue, inputValue.trim())) {
+    if (hasValueChanged(originalValue, inputValue.trim())) {
       setDuration(validationResult.parsedValue!)
     }
     
