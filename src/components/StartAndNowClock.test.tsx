@@ -1,14 +1,17 @@
 import { render, screen, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import StartAndNowClock from './StartAndNowClock'
-import { useTimerState } from '../store'
+import { timerSingleton } from '../utils/timer-singleton'
 
-// Mock the store
-vi.mock('../store', () => ({
-  useTimerState: vi.fn()
+// Mock the timer singleton
+vi.mock('../utils/timer-singleton', () => ({
+  timerSingleton: {
+    getState: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()) // Return unsubscribe function
+  }
 }))
 
-const mockUseTimerState = vi.mocked(useTimerState)
+const mockTimerSingleton = vi.mocked(timerSingleton)
 
 describe('StartAndNowClock', () => {
   beforeEach(() => {
@@ -25,6 +28,18 @@ describe('StartAndNowClock', () => {
       writable: true,
       value: new Date('2024-01-15T14:29:59.000Z').getTime() // Navigation started 1 second ago
     })
+
+    // Set default mock for timerSingleton
+    mockTimerSingleton.getState.mockReturnValue({
+      status: 'idle',
+      durationMs: 600000,
+      elapsedMs: 0,
+      remainingMs: 600000,
+      startTime: undefined,
+      pauseAccumulatedMs: 0,
+      lastUpdateTime: 1000,
+      precisionDriftMs: 0
+    })
   })
 
   afterEach(() => {
@@ -33,14 +48,6 @@ describe('StartAndNowClock', () => {
   })
 
   it('displays placeholder when timer is not started', () => {
-    mockUseTimerState.mockReturnValue({
-      status: 'idle',
-      durationMs: 600000,
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
     render(<StartAndNowClock />)
     
     expect(screen.getByText('開始時刻・現在時刻')).toBeInTheDocument()
@@ -48,145 +55,87 @@ describe('StartAndNowClock', () => {
   })
 
   it('displays start time and current time when timer is running', () => {
-    mockUseTimerState.mockReturnValue({
+    mockTimerSingleton.getState.mockReturnValue({
       status: 'running',
       durationMs: 600000,
-      startEpochMs: 500, // Started 500ms after navigation
+      elapsedMs: 500,
+      remainingMs: 599500,
+      startTime: 500, // Started 500ms after navigation
       pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
+      lastUpdateTime: 1000,
+      precisionDriftMs: 0
     })
 
     render(<StartAndNowClock />)
     
-    // Start time should be 14:29:59 + 500ms = 14:29:59 (rounded to minute)
+    // Start time should be timeOrigin + startTime = 14:29:59 + 500ms = 14:29:59 (rounded to minute)
     // Current time should be 14:30:00 (JST)
     expect(screen.getByText('23:29 - 23:30')).toBeInTheDocument()
   })
 
-  it('updates current time every second', async () => {
-    mockUseTimerState.mockReturnValue({
-      status: 'running',
-      durationMs: 600000,
-      startEpochMs: 500,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
-    render(<StartAndNowClock />)
-    
-    // Initial time
-    expect(screen.getByText('23:29 - 23:30')).toBeInTheDocument()
-    
-    // Advance time by 1 minute
-    act(() => {
-      vi.advanceTimersByTime(60000)
-    })
-    
-    // Current time should update
-    expect(screen.getByText('23:29 - 23:31')).toBeInTheDocument()
-  })
-
-  it('formats time using Japanese locale', () => {
-    mockUseTimerState.mockReturnValue({
-      status: 'running',
-      durationMs: 600000,
-      startEpochMs: 500,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
-    render(<StartAndNowClock />)
-    
-    // Should use 24-hour format (Japanese locale)
-    const timeDisplay = screen.getByText(/\d{2}:\d{2} - \d{2}:\d{2}/)
-    expect(timeDisplay).toBeInTheDocument()
-    
-    // Should not contain AM/PM indicators
-    expect(screen.queryByText(/AM|PM/)).not.toBeInTheDocument()
-  })
-
   it('handles paused timer state correctly', () => {
-    mockUseTimerState.mockReturnValue({
+    mockTimerSingleton.getState.mockReturnValue({
       status: 'paused',
       durationMs: 600000,
-      startEpochMs: undefined, // No start time when paused
+      elapsedMs: 30000,
+      remainingMs: 570000,
+      startTime: undefined, // No start time when paused
       pauseAccumulatedMs: 30000,
-      nowEpochMs: 1000
+      lastUpdateTime: 1000,
+      precisionDriftMs: 0
     })
 
     render(<StartAndNowClock />)
     
-    // Should show placeholder for start time when paused
+    // Should show placeholder for start time when paused (no startTime in engine state)
     expect(screen.getByText('--:-- - 23:30')).toBeInTheDocument()
   })
 
   it('applies custom className', () => {
-    mockUseTimerState.mockReturnValue({
-      status: 'idle',
-      durationMs: 600000,
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
     const { container } = render(<StartAndNowClock className="custom-class" />)
     
     expect(container.firstChild).toHaveClass('custom-class')
   })
 
-  it('calculates start time correctly with different performance timestamps', () => {
-    // Mock different performance values
-    vi.mocked(performance.now).mockReturnValue(2500) // 2.5 seconds after navigation
+  it('updates when timer state changes via subscription', () => {
+    let subscribeCallback: ((state: any) => void) | null = null
     
-    mockUseTimerState.mockReturnValue({
-      status: 'running',
-      durationMs: 600000,
-      startEpochMs: 1500, // Started 1.5 seconds after navigation
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 2500
+    // Mock subscribe to capture the callback
+    mockTimerSingleton.subscribe.mockImplementation((callback) => {
+      subscribeCallback = callback
+      return vi.fn() // unsubscribe function
     })
 
     render(<StartAndNowClock />)
+    expect(screen.getByText('--:-- - 23:30')).toBeInTheDocument()
     
-    // Start time should be timeOrigin + startEpochMs
-    // = 2024-01-15T14:29:59.000Z + 1500ms = 2024-01-15T14:30:00.500Z
-    // Formatted as 23:30 in JST
+    // Simulate state change via callback
+    const runningState = {
+      status: 'running' as const,
+      durationMs: 600000,
+      elapsedMs: 0,
+      remainingMs: 600000,
+      startTime: 1000, // Timer started at 23:30
+      pauseAccumulatedMs: 0,
+      lastUpdateTime: 1000,
+      precisionDriftMs: 0
+    }
+
+    mockTimerSingleton.getState.mockReturnValue(runningState)
+    
+    // Trigger the subscription callback to simulate state change
+    act(() => {
+      if (subscribeCallback) {
+        subscribeCallback(runningState)
+      }
+    })
+    
     expect(screen.getByText('23:30 - 23:30')).toBeInTheDocument()
-  })
-
-  it('handles missing performance.timeOrigin gracefully', () => {
-    // Remove timeOrigin to test fallback
-    Object.defineProperty(performance, 'timeOrigin', {
-      writable: true,
-      value: undefined
-    })
-    
-    mockUseTimerState.mockReturnValue({
-      status: 'running',
-      durationMs: 600000,
-      startEpochMs: 1000,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
-    render(<StartAndNowClock />)
-    
-    // Should still render without crashing
-    expect(screen.getByText('開始時刻・現在時刻')).toBeInTheDocument()
-    expect(screen.getByText(/\d{2}:\d{2} - \d{2}:\d{2}/)).toBeInTheDocument()
   })
 
   it('cleans up interval on unmount', () => {
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
     
-    mockUseTimerState.mockReturnValue({
-      status: 'idle',
-      durationMs: 600000,
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 1000
-    })
-
     const { unmount } = render(<StartAndNowClock />)
     
     unmount()

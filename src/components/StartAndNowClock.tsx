@@ -1,13 +1,14 @@
 import { useEffect, useState, memo, useMemo } from 'react'
-import { useTimerState } from '../store'
+import { timerSingleton } from '../utils/timer-singleton'
+import type { TimerEngineState } from '../utils/timer-engine'
 
 interface StartAndNowClockProps {
   className?: string
 }
 
 const StartAndNowClock = memo(({ className = '' }: StartAndNowClockProps) => {
-  const timer = useTimerState()
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [engineState, setEngineState] = useState<TimerEngineState | null>(null)
 
   // Update current time every second
   useEffect(() => {
@@ -16,6 +17,21 @@ const StartAndNowClock = memo(({ className = '' }: StartAndNowClockProps) => {
     }, 1000)
 
     return () => clearInterval(interval)
+  }, [])
+
+  // Subscribe to timer engine state changes
+  useEffect(() => {
+    const updateEngineState = () => {
+      setEngineState(timerSingleton.getState())
+    }
+
+    // Initial state
+    updateEngineState()
+
+    // Subscribe to changes
+    const unsubscribe = timerSingleton.subscribe(updateEngineState)
+
+    return unsubscribe
   }, [])
 
   // Format time using Intl.DateTimeFormat for localization - memoized for performance
@@ -29,21 +45,21 @@ const StartAndNowClock = memo(({ className = '' }: StartAndNowClockProps) => {
     return formatter.format(date)
   }, [formatter])
 
-  // Calculate start time based on timer state
+  // Calculate start time from timer engine state
   const getStartTime = (): Date | null => {
-    if (!timer.startEpochMs) {
+    if (!engineState || !engineState.startTime) {
       return null
     }
-    
-    // Convert performance.now() timestamp to Date
+
+    // Convert performance.now() timestamp to actual Date
     // performance.now() is relative to navigationStart, so we need to calculate the actual start time
     const performanceStart = performance.timeOrigin || (Date.now() - performance.now())
-    const actualStartTime = new Date(performanceStart + timer.startEpochMs)
-    
+    const actualStartTime = new Date(performanceStart + engineState.startTime)
+
     return actualStartTime
   }
 
-  const startTime = useMemo(() => getStartTime(), [timer.startEpochMs])
+  const startTime = useMemo(() => getStartTime(), [engineState?.startTime])
   const startTimeText = useMemo(() => startTime ? formatTime(startTime) : '--:--', [startTime, formatTime])
   const currentTimeText = useMemo(() => formatTime(currentTime), [currentTime, formatTime])
 
