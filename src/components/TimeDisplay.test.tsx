@@ -2,38 +2,55 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TimeDisplay from './TimeDisplay'
-import { useTimerState, useTimerActions } from '../store'
 
-// Zustandストアをモック
-vi.mock('../store', () => ({
-  useTimerState: vi.fn(),
-  useTimerActions: vi.fn()
+// useTimerフックをモック
+vi.mock('../hooks/useTimer', () => ({
+  useTimer: vi.fn()
 }))
 
-const mockUseTimerState = vi.mocked(useTimerState)
-const mockUseTimerActions = vi.mocked(useTimerActions)
+// timer-singletonをモック
+vi.mock('../utils/timer-singleton', () => ({
+  timerSingleton: {
+    getState: vi.fn(),
+    setDuration: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
+    initialize: vi.fn(),
+    start: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    reset: vi.fn()
+  }
+}))
+
+import { useTimer } from '../hooks/useTimer'
+const mockUseTimer = vi.mocked(useTimer)
 
 describe('TimeDisplay', () => {
   const mockSetDuration = vi.fn()
   
-  const defaultTimerState = {
+  const defaultTimerReturn = {
     status: 'idle' as const,
-    durationMs: 10 * 60 * 1000, // 10分
-    startEpochMs: undefined,
-    pauseAccumulatedMs: 0,
-    nowEpochMs: Date.now()
+    elapsedMs: 0,
+    remainingMs: 10 * 60 * 1000, // 10分
+    durationMs: 10 * 60 * 1000,
+    precisionDriftMs: 0,
+    start: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    reset: vi.fn(),
+    setDuration: mockSetDuration,
+    testBell: vi.fn(),
+    initializeAudio: vi.fn(),
+    isAudioReady: false,
+    isRunning: false,
+    isPaused: false,
+    isIdle: true,
+    isFinished: false
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseTimerState.mockReturnValue(defaultTimerState)
-    mockUseTimerActions.mockReturnValue({
-      setDuration: mockSetDuration,
-      startTimer: vi.fn(),
-      pauseTimer: vi.fn(),
-      resetTimer: vi.fn(),
-      updateNow: vi.fn()
-    })
+    mockUseTimer.mockReturnValue(defaultTimerReturn)
   })
 
   describe('表示機能', () => {
@@ -46,10 +63,12 @@ describe('TimeDisplay', () => {
 
     it('残り時間を正確に計算して表示する', () => {
       // 5分経過した状態をシミュレート
-      mockUseTimerState.mockReturnValue({
-        ...defaultTimerState,
+      mockUseTimer.mockReturnValue({
+        ...defaultTimerReturn,
         status: 'paused',
-        pauseAccumulatedMs: 5 * 60 * 1000 // 5分経過
+        remainingMs: 5 * 60 * 1000, // 5分残り
+        isPaused: true,
+        isIdle: false
       })
 
       render(<TimeDisplay />)
@@ -58,13 +77,12 @@ describe('TimeDisplay', () => {
     })
 
     it('実行中の状態で動的に時間を更新する', () => {
-      const startTime = 1000
-      mockUseTimerState.mockReturnValue({
-        ...defaultTimerState,
+      mockUseTimer.mockReturnValue({
+        ...defaultTimerReturn,
         status: 'running',
-        startEpochMs: startTime,
-        nowEpochMs: startTime + 2 * 60 * 1000, // 2分経過
-        pauseAccumulatedMs: 0
+        remainingMs: 8 * 60 * 1000, // 8分残り
+        isRunning: true,
+        isIdle: false
       })
 
       render(<TimeDisplay />)
@@ -73,14 +91,17 @@ describe('TimeDisplay', () => {
     })
 
     it('完了状態で0:00を表示し、赤色になる', () => {
-      mockUseTimerState.mockReturnValue({
-        ...defaultTimerState,
-        status: 'finished'
+      mockUseTimer.mockReturnValue({
+        ...defaultTimerReturn,
+        status: 'finished',
+        remainingMs: 0,
+        isFinished: true,
+        isIdle: false
       })
 
       render(<TimeDisplay />)
       
-      const timeElement = screen.getByText('10:00')
+      const timeElement = screen.getByText('00:00')
       expect(timeElement).toHaveClass('text-red-500')
     })
   })
@@ -109,9 +130,11 @@ describe('TimeDisplay', () => {
     })
 
     it('実行中は編集モードに入れない', async () => {
-      mockUseTimerState.mockReturnValue({
-        ...defaultTimerState,
-        status: 'running'
+      mockUseTimer.mockReturnValue({
+        ...defaultTimerReturn,
+        status: 'running',
+        isRunning: true,
+        isIdle: false
       })
 
       const user = userEvent.setup()
@@ -267,6 +290,310 @@ describe('TimeDisplay', () => {
       
       const timeDisplay = screen.getByText('10:00')
       expect(timeDisplay).toHaveClass('custom-class')
+    })
+  })
+
+  describe('値変更検出ロジック', () => {
+    it('編集開始時に元の値を正しく保存する', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 入力フィールドに元の値が設定されていることを確認
+      const input = screen.getByRole('textbox')
+      expect(input).toHaveValue('10:00')
+    })
+
+    it('値が変更されていない場合はsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 値を変更せずにEnterで確定
+      const input = screen.getByRole('textbox')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが呼ばれていないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+    })
+
+    it('値が変更されていない場合はblurでもsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 値を変更せずにblur
+      const input = screen.getByRole('textbox')
+      fireEvent.blur(input)
+      
+      await waitFor(() => {
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      })
+      
+      // setDurationが呼ばれていないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+    })
+
+    it('値が変更された場合のみsetDurationを呼び出す', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 値を変更
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '05:30')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが正しい値で呼ばれることを確認
+      expect(mockSetDuration).toHaveBeenCalledWith(5.5 * 60 * 1000)
+    })
+
+    it('同じ値を再入力した場合はsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 同じ値を再入力
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '10:00')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが呼ばれていないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+    })
+
+    it('空白を含む同じ値でもsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 空白を含む同じ値を入力
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, ' 10:00 ')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが呼ばれていないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('編集状態管理', () => {
+    it('編集開始時に正しい状態を設定する', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る前の状態を確認
+      expect(screen.getByRole('button')).toBeInTheDocument()
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 編集モードの状態を確認
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+      expect(screen.getByDisplayValue('10:00')).toBeInTheDocument()
+    })
+
+    it('編集終了時に正しい状態にリセットする', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 値を変更して確定
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '07:30')
+      await user.keyboard('{Enter}')
+      
+      // 編集モードが終了していることを確認
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(screen.getByRole('button')).toBeInTheDocument()
+    })
+
+    it('キャンセル時に状態を正しくリセットする', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 値を変更してからキャンセル
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '07:30')
+      await user.keyboard('{Escape}')
+      
+      // 編集モードが終了し、元の値が表示されることを確認
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(screen.getByRole('button')).toBeInTheDocument()
+      expect(screen.getByText('10:00')).toBeInTheDocument()
+      expect(mockSetDuration).not.toHaveBeenCalled()
+    })
+
+    it('エラー状態から正常に回復する', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 無効な値を入力してエラー状態にする
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, 'invalid')
+      
+      // エラーが表示されることを確認
+      expect(screen.getByText('mm:ss形式で入力してください（例：05:30）')).toBeInTheDocument()
+      
+      // 有効な値に修正
+      await user.clear(input)
+      await user.type(input, '05:30')
+      
+      // エラーが消えることを確認
+      expect(screen.queryByText('mm:ss形式で入力してください（例：05:30）')).not.toBeInTheDocument()
+      
+      // 確定
+      await user.keyboard('{Enter}')
+      
+      // 正常に編集が完了することを確認
+      expect(mockSetDuration).toHaveBeenCalledWith(5.5 * 60 * 1000)
+    })
+
+    it('編集モード中にフォーカスが正しく設定される', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入る
+      await user.click(screen.getByRole('button'))
+      
+      // 入力フィールドにフォーカスが当たることを確認
+      const input = screen.getByRole('textbox')
+      expect(input).toHaveFocus()
+    })
+  })
+
+  describe('setDurationの呼び出し条件', () => {
+    it('有効な新しい値の場合のみsetDurationを呼び出す', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入って有効な新しい値を入力
+      await user.click(screen.getByRole('button'))
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '03:45')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが正しい値で1回だけ呼ばれることを確認
+      expect(mockSetDuration).toHaveBeenCalledTimes(1)
+      expect(mockSetDuration).toHaveBeenCalledWith(3.75 * 60 * 1000)
+    })
+
+    it('無効な値の場合はsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入って無効な値を入力
+      await user.click(screen.getByRole('button'))
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '99:99')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが呼ばれないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+      
+      // エラーが表示され、編集モードが継続することを確認
+      expect(screen.getByText('mm:ss形式で入力してください（例：05:30）')).toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+    })
+
+    it('0の値の場合はsetDurationを呼び出さない', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入って0の値を入力
+      await user.click(screen.getByRole('button'))
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '00:00')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが呼ばれないことを確認
+      expect(mockSetDuration).not.toHaveBeenCalled()
+      
+      // エラーが表示されることを確認
+      expect(screen.getByText('0より大きい時間を入力してください')).toBeInTheDocument()
+    })
+
+    it('複数回の編集で値が変更された場合のみsetDurationを呼び出す', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 1回目の編集：値を変更
+      await user.click(screen.getByRole('button'))
+      let input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '05:00')
+      await user.keyboard('{Enter}')
+      
+      expect(mockSetDuration).toHaveBeenCalledTimes(1)
+      expect(mockSetDuration).toHaveBeenCalledWith(5 * 60 * 1000)
+      
+      // 2回目の編集：値を変更しない（現在の表示時間と同じ値を入力）
+      await user.click(screen.getByRole('button'))
+      input = screen.getByRole('textbox')
+      await user.keyboard('{Enter}') // 値を変更せずに確定
+      
+      // setDurationが追加で呼ばれないことを確認
+      expect(mockSetDuration).toHaveBeenCalledTimes(1)
+      
+      // 3回目の編集：再度値を変更
+      await user.click(screen.getByRole('button'))
+      input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '08:30')
+      await user.keyboard('{Enter}')
+      
+      // setDurationが再度呼ばれることを確認
+      expect(mockSetDuration).toHaveBeenCalledTimes(2)
+      expect(mockSetDuration).toHaveBeenLastCalledWith(8.5 * 60 * 1000)
+    })
+
+    it('blurイベントでも値変更検出が正しく動作する', async () => {
+      const user = userEvent.setup()
+      render(<TimeDisplay />)
+      
+      // 編集モードに入って値を変更
+      await user.click(screen.getByRole('button'))
+      const input = screen.getByRole('textbox')
+      await user.clear(input)
+      await user.type(input, '12:15')
+      
+      // blurで確定
+      fireEvent.blur(input)
+      
+      await waitFor(() => {
+        expect(mockSetDuration).toHaveBeenCalledWith(12.25 * 60 * 1000)
+      })
     })
   })
 })
