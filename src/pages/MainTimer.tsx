@@ -21,7 +21,7 @@ const MainTimer = () => {
       {/* Settings Button */}
       <button 
         onClick={handleSettingsClick}
-        className="absolute right-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-mint-500 rounded-lg"
+        className="absolute right-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 focus:outline-none rounded-lg"
         aria-label="設定を開く"
         title="設定"
       >

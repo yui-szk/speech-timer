@@ -36,7 +36,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
   // 編集モードに入る
   const handleTimeClick = () => {
     if (!enabled) return // 無効時は編集不可
-    
+
     setIsEditing(true)
     setInputValue(displayTime)
     setError(null)
@@ -45,7 +45,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
   // 編集を確定
   const handleSubmit = () => {
     const trimmedValue = inputValue.trim()
-    
+
     // まず基本的な形式をチェック（正規表現のみ）
     const timeRegex = /^(\d{1,2}):([0-5]\d)$/
     if (!timeRegex.test(trimmedValue)) {
@@ -93,7 +93,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setInputValue(value)
-    
+
     // リアルタイムバリデーション
     if (value) {
       // まず基本的な形式をチェック（正規表現のみ）
@@ -153,7 +153,7 @@ const BellItem: React.FC<BellItemProps> = memo(({
               style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
             />
             {error && (
-              <div 
+              <div
                 id={`${type}-error`}
                 className="text-xs text-red-600 text-center"
                 role="alert"
@@ -167,9 +167,9 @@ const BellItem: React.FC<BellItemProps> = memo(({
             onClick={handleTimeClick}
             disabled={!enabled}
             className={`
-              font-normal text-[32px] px-2 py-1 rounded transition-colors focus-ring text-[#2c6975]
-              ${enabled 
-                ? 'hover:opacity-80 cursor-pointer' 
+              font-normal text-[32px] px-2 py-1 rounded focus:outline-none text-[#2c6975]
+              ${enabled
+                ? 'cursor-pointer'
                 : 'opacity-50 cursor-not-allowed'
               }
             `}
@@ -185,8 +185,8 @@ const BellItem: React.FC<BellItemProps> = memo(({
       <button
         onClick={handleToggle}
         className={`
-          w-8 h-8 flex items-center justify-center rounded transition-colors focus-ring
-          ${enabled ? 'text-yellow-500 hover:bg-yellow-50' : 'text-gray-400 hover:bg-gray-50'}
+          w-8 h-8 flex items-center justify-center rounded focus:outline-none
+          ${enabled ? 'text-yellow-500' : 'text-gray-400'}
         `}
         role="switch"
         aria-checked={enabled}
@@ -237,7 +237,7 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = memo(({ className = 
         onTimeChange={handleTimeChange}
         onToggle={handleToggle}
       />
-      
+
       <BellItem
         type="second"
         label="2令"
@@ -246,7 +246,7 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = memo(({ className = 
         onTimeChange={handleTimeChange}
         onToggle={handleToggle}
       />
-      
+
       <BellItem
         type="third"
         label="3令"
@@ -255,7 +255,7 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = memo(({ className = 
         onTimeChange={handleTimeChange}
         onToggle={handleToggle}
       />
-      
+
       {/* Hidden help text for screen readers */}
       <div className="sr-only">
         <div id="first-switch-help">1令ベルの有効・無効を切り替えます</div>

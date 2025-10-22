@@ -67,7 +67,7 @@ const Controls = memo(({ }: ControlsProps) => {
   // ボタンのクリックハンドラー
   const handlePlayPause = async () => {
     await handleInitializeAudio() // Initialize audio on first interaction
-    
+
     if (status === 'running') {
       pause()
     } else if (status === 'idle' || status === 'paused') {
@@ -97,7 +97,7 @@ const Controls = memo(({ }: ControlsProps) => {
       {/* リセットボタン */}
       <button
         onClick={handleReset}
-        className="absolute left-[-2px] top-[2px] w-[60px] h-[60px] bg-transparent hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
+        className="absolute left-[-2px] top-[2px] w-[60px] h-[60px] bg-transparent rounded-lg flex items-center justify-center focus:outline-none"
         aria-label="タイマーをリセット (R)"
         title="タイマーをリセット (R)"
         type="button"
@@ -109,7 +109,7 @@ const Controls = memo(({ }: ControlsProps) => {
       {/* ベルボタン */}
       <button
         onClick={handleBellTest}
-        className="absolute left-[81px] top-0 w-[60px] h-[60px] bg-transparent hover:bg-yellow-100 active:bg-yellow-200 rounded-full flex items-center justify-center transition-colors duration-150 focus-ring-accent overflow-hidden"
+        className="absolute left-[81px] top-0 w-[60px] h-[60px] bg-transparent rounded-full flex items-center justify-center focus:outline-none overflow-hidden"
         aria-label="ベル"
         title="ベル"
         type="button"
@@ -122,23 +122,21 @@ const Controls = memo(({ }: ControlsProps) => {
       <button
         onClick={handlePlayPause}
         disabled={isFinished}
-        className={`absolute left-[169px] top-0 w-[60px] h-[60px] rounded-full flex items-center justify-center transition-colors duration-150 focus-ring ${
-          isFinished
-
-        }`}
+        className={`absolute left-[169px] top-0 w-[60px] h-[60px] rounded-full flex items-center justify-center focus:outline-none ${isFinished ? 'cursor-not-allowed' : 'bg-transparent'
+          }`}
         aria-label={
           isPlaying
             ? 'タイマーを一時停止 (Space)'
             : isFinished
-            ? 'タイマー完了'
-            : 'タイマーを開始 (Space)'
+              ? 'タイマー完了'
+              : 'タイマーを開始 (Space)'
         }
         title={
           isPlaying
             ? 'タイマーを一時停止 (Space)'
             : isFinished
-            ? 'タイマー完了'
-            : 'タイマーを開始 (Space)'
+              ? 'タイマー完了'
+              : 'タイマーを開始 (Space)'
         }
         type="button"
         aria-describedby="play-pause-help"
@@ -152,7 +150,7 @@ const Controls = memo(({ }: ControlsProps) => {
           <span className="material-symbols text-[#68b2a0] hover:text-[#5a9b8a] active:text-[#4d8577] text-5xl">play_arrow</span>
         )}
       </button>
-      
+
       {/* Hidden help text for screen readers */}
       <div className="sr-only">
         <div id="reset-help">Rキーでもリセットできます</div>
