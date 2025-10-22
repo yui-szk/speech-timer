@@ -1,23 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { TimerState, TimerSettings, BellState, Millis } from '../types'
-
-// Default values
-const DEFAULT_SETTINGS: TimerSettings = {
-  theme: 'mint',
-  bellEnabled: {
-    first: true,
-    second: true,
-    third: true
-  },
-  bellTimesMs: {
-    first: 3 * 60 * 1000, // 3 minutes
-    second: 2 * 60 * 1000, // 2 minutes  
-    third: 1 * 60 * 1000   // 1 minute
-  },
-  progressMode: 'remaining',
-  volume: 0.7
-}
+import { settingsManager, DEFAULT_SETTINGS } from '../utils/settings-manager'
 
 const DEFAULT_TIMER_STATE: TimerState = {
   status: 'idle',
@@ -60,9 +44,9 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   devtools(
     (set, get) => ({
-      // Initial state
+      // Initial state - load settings from localStorage
       timer: DEFAULT_TIMER_STATE,
-      settings: DEFAULT_SETTINGS,
+      settings: settingsManager.loadSettings(),
       bells: DEFAULT_BELL_STATE,
       
       // Timer actions
@@ -127,12 +111,19 @@ export const useAppStore = create<AppStore>()(
       
       // Settings actions
       updateSettings: (partial: Partial<TimerSettings>) => {
-        set((state) => ({
-          settings: {
+        set((state) => {
+          const newSettings = {
             ...state.settings,
             ...partial
           }
-        }), false, 'settings/update')
+          
+          // Auto-save settings to localStorage
+          settingsManager.saveSettings(newSettings)
+          
+          return {
+            settings: newSettings
+          }
+        }, false, 'settings/update')
       },
       
       // Bell actions
