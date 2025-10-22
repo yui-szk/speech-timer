@@ -1,6 +1,13 @@
+import { useNavigate } from 'react-router-dom'
 import { TimeDisplay, CircularProgress, Controls, BellScheduleStrip, StartAndNowClock, LiveAnnouncer } from '../components'
 
 const MainTimer = () => {
+  const navigate = useNavigate()
+
+  const handleSettingsClick = () => {
+    navigate('/settings')
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-white from-80% to-[#a6d5cd] overflow-hidden" role="main">
       {/* Skip link for keyboard navigation */}
@@ -12,7 +19,12 @@ const MainTimer = () => {
       </a>
 
       {/* Settings Button */}
-      <button className="absolute right-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-mint-500 rounded-lg">
+      <button 
+        onClick={handleSettingsClick}
+        className="absolute right-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-mint-500 rounded-lg"
+        aria-label="設定を開く"
+        title="設定"
+      >
         <span className="material-symbols text-4xl text-[#A6D5CD]">settings</span>
       </button>
 

@@ -1,8 +1,15 @@
+import { useNavigate } from 'react-router-dom'
 import { ThemePicker, BellSoundPicker, ProgressModeToggle } from '../components'
 
 const Settings = () => {
+  const navigate = useNavigate()
+
+  const handleBackClick = () => {
+    navigate('/')
+  }
+
   return (
-    <main className="space-y-4" role="main">
+    <main className="min-h-screen bg-gradient-to-b from-white from-80% to-[#a6d5cd] p-6" role="main">
       {/* Skip link for keyboard navigation */}
       <a 
         href="#theme-settings" 
@@ -10,28 +17,40 @@ const Settings = () => {
       >
         テーマ設定にスキップ
       </a>
+
+      {/* Back Button */}
+      <button 
+        onClick={handleBackClick}
+        className="absolute left-7 top-7 w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-mint-500 rounded-lg"
+        aria-label="メインタイマーに戻る"
+        title="戻る"
+      >
+        <span className="material-symbols text-4xl text-[#A6D5CD]">arrow_back</span>
+      </button>
       
-      <header className="mb-6">
+      <header className="mb-6 mt-16">
         <h1 className="text-2xl font-medium text-gray-900">設定</h1>
         <p className="text-subheadline text-gray-600 mt-1">
           アプリの表示や動作をカスタマイズできます
         </p>
       </header>
       
-      <section aria-labelledby="theme-settings-heading" id="theme-settings">
-        <h2 id="theme-settings-heading" className="sr-only">テーマ設定</h2>
-        <ThemePicker />
-      </section>
-      
-      <section aria-labelledby="audio-settings-heading">
-        <h2 id="audio-settings-heading" className="sr-only">音声設定</h2>
-        <BellSoundPicker />
-      </section>
-      
-      <section aria-labelledby="display-settings-heading">
-        <h2 id="display-settings-heading" className="sr-only">表示設定</h2>
-        <ProgressModeToggle />
-      </section>
+      <div className="space-y-6">
+        <section aria-labelledby="theme-settings-heading" id="theme-settings">
+          <h2 id="theme-settings-heading" className="sr-only">テーマ設定</h2>
+          <ThemePicker />
+        </section>
+        
+        <section aria-labelledby="audio-settings-heading">
+          <h2 id="audio-settings-heading" className="sr-only">音声設定</h2>
+          <BellSoundPicker />
+        </section>
+        
+        <section aria-labelledby="display-settings-heading">
+          <h2 id="display-settings-heading" className="sr-only">表示設定</h2>
+          <ProgressModeToggle />
+        </section>
+      </div>
     </main>
   );
 };
