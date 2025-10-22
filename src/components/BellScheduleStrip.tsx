@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react'
-import { formatMsToTime, parseTimeToMs, validateTimeFormat } from '../utils/time'
+import { formatMsToTime, parseTimeToMs } from '../utils/time'
 import { useSettings, useSettingsActions } from '../store'
 import type { Millis } from '../types'
 
@@ -193,14 +193,11 @@ const BellItem: React.FC<BellItemProps> = memo(({
         aria-label={`${label}を${enabled ? '無効' : '有効'}にする`}
         aria-describedby={`${type}-switch-help`}
       >
-        <svg
-          className="w-6 h-6"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 10.5C21 10.5 20.75 10.75 20.5 11C20.25 11.25 20 11.5 20 11.5V12.5C20 12.5 20.25 12.75 20.5 13C20.75 13.25 21 13.5 21 13.5C21.3 13.4 21.5 13.1 21.5 12.75V11.25C21.5 10.9 21.3 10.6 21 10.5ZM3 10.5C2.7 10.6 2.5 10.9 2.5 11.25V12.75C2.5 13.1 2.7 13.4 3 13.5C3 13.5 3.25 13.25 3.5 13C3.75 12.75 4 12.5 4 12.5V11.5C4 11.5 3.75 11.25 3.5 11C3.25 10.75 3 10.5 3 10.5ZM9.5 6.5C9.5 6.5 9.4 6.6 9.25 6.75C8.9 7.1 8.4 7.6 8.4 8.4V15.6C8.4 16.4 8.9 16.9 9.25 17.25C9.4 17.4 9.5 17.5 9.5 17.5H14.5C14.5 17.5 14.6 17.4 14.75 17.25C15.1 16.9 15.6 16.4 15.6 15.6V8.4C15.6 7.6 15.1 7.1 14.75 6.75C14.6 6.6 14.5 6.5 14.5 6.5H9.5ZM12 20C10.9 20 10 20.9 10 22H14C14 20.9 13.1 20 12 20Z"/>
-        </svg>
+        {enabled ? (
+          <span className="material-symbols">notifications_active</span>
+        ) : (
+          <span className="material-symbols">notifications_off</span>
+        )}
       </button>
     </div>
   )
