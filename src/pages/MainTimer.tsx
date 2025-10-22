@@ -20,8 +20,8 @@ const MainTimer = () => {
       </button>
 
       {/* Main Timer Circle */}
-      <div className="absolute left-[53px] top-[103px] w-[283px] h-[283px]">
-        <CircularProgress size={283} strokeWidth={8} />
+      <div className="absolute left-1/2 top-[103px] transform -translate-x-1/2 w-[283px] h-[283px]">
+        <CircularProgress size={283} strokeWidth={8} responsive={false} />
         <div className="absolute inset-0 flex items-center justify-center">
           <TimeDisplay />
         </div>
