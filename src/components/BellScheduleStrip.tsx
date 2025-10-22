@@ -139,13 +139,13 @@ const BellItem: React.FC<BellItemProps> = ({
         <button
           onClick={handleToggle}
           className={`
-            relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-            focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2
+            relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-ring
             ${enabled ? 'bg-mint-600' : 'bg-gray-200'}
           `}
           role="switch"
           aria-checked={enabled}
           aria-label={`${label}を${enabled ? '無効' : '有効'}にする`}
+          aria-describedby={`${type}-switch-help`}
         >
           <span
             className={`
@@ -193,12 +193,11 @@ const BellItem: React.FC<BellItemProps> = ({
             onClick={handleTimeClick}
             disabled={!enabled}
             className={`
-              font-mono text-subheadline px-2 py-1 rounded transition-colors
+              font-mono text-subheadline px-2 py-1 rounded transition-colors focus-ring
               ${enabled 
                 ? 'text-mint-600 hover:text-mint-700 hover:bg-mint-50 cursor-pointer' 
                 : 'text-gray-400 cursor-not-allowed'
               }
-              focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-1
             `}
             aria-label={`${label}の時間 ${displayTime}${enabled ? '。クリックして編集' : '。無効'}`}
           >
@@ -283,6 +282,13 @@ const BellScheduleStrip: React.FC<BellScheduleStripProps> = ({ className = '' })
         <p className="text-caption1 text-gray-500 text-center">
           残り時間がベル時間に到達すると音が鳴ります
         </p>
+      </div>
+      
+      {/* Hidden help text for screen readers */}
+      <div className="sr-only">
+        <div id="first-switch-help">1令ベルの有効・無効を切り替えます</div>
+        <div id="second-switch-help">2令ベルの有効・無効を切り替えます</div>
+        <div id="third-switch-help">3令ベルの有効・無効を切り替えます</div>
       </div>
     </div>
   )

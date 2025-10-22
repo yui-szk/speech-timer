@@ -274,7 +274,7 @@ describe('Controls', () => {
       render(<Controls />)
 
       const resetButton = screen.getByLabelText(/タイマーをリセット/)
-      expect(resetButton).toHaveClass('focus:ring-2', 'focus:ring-mint-500')
+      expect(resetButton).toHaveClass('focus-ring')
     })
 
     it('ボタンサイズが44x44px以上である', () => {

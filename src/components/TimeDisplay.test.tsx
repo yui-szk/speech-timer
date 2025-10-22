@@ -249,7 +249,7 @@ describe('TimeDisplay', () => {
       await user.clear(input)
       await user.type(input, 'invalid')
       
-      expect(input).toHaveAttribute('aria-describedby', 'time-error')
+      expect(input).toHaveAttribute('aria-describedby', 'time-error time-format-help')
       expect(screen.getByRole('alert')).toBeInTheDocument()
     })
   })

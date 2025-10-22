@@ -75,8 +75,7 @@ const BellSoundPicker = () => {
             value={volumePercentage}
             onChange={handleVolumeChange}
             className="
-              w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer
-              focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2
+              w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer focus-ring
               slider:bg-mint-500
             "
             style={{
@@ -92,8 +91,7 @@ const BellSoundPicker = () => {
         onClick={handleTestSound}
         disabled={isTestingSound}
         className={`
-          w-full p-3 rounded-lg text-subheadline font-medium transition-colors
-          focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2
+          w-full p-3 rounded-lg text-subheadline font-medium transition-colors focus-ring-accent
           ${isTestingSound
             ? 'bg-accent-300 text-white cursor-not-allowed'
             : 'bg-accent-400 text-white hover:bg-accent-500'

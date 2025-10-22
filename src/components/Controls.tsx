@@ -98,10 +98,11 @@ const Controls = ({}: ControlsProps) => {
       {/* リセットボタン */}
       <button
         onClick={handleReset}
-        className="w-tap h-tap bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center justify-center transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2"
+        className="w-tap h-tap bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring"
         aria-label="タイマーをリセット (R)"
         title="タイマーをリセット (R)"
         type="button"
+        aria-describedby="reset-help"
       >
         <svg
           className="w-6 h-6 text-gray-700"
@@ -122,10 +123,11 @@ const Controls = ({}: ControlsProps) => {
       {/* ベルテストボタン */}
       <button
         onClick={handleBellTest}
-        className="w-tap h-tap bg-accent-400 hover:bg-accent-500 active:bg-accent-600 rounded-lg flex items-center justify-center transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2"
+        className="w-tap h-tap bg-accent-400 hover:bg-accent-500 active:bg-accent-600 rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring-accent"
         aria-label="ベル音をテスト (B)"
         title="ベル音をテスト (B)"
         type="button"
+        aria-describedby="bell-test-help"
       >
         <svg
           className="w-6 h-6 text-white"
@@ -147,7 +149,7 @@ const Controls = ({}: ControlsProps) => {
       <button
         onClick={handlePlayPause}
         disabled={isFinished}
-        className={`w-tap h-tap rounded-lg flex items-center justify-center transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2 ${
+        className={`w-tap h-tap rounded-lg flex items-center justify-center transition-colors duration-150 focus-ring ${
           isFinished
             ? 'bg-gray-300 cursor-not-allowed'
             : 'bg-mint-500 hover:bg-mint-600 active:bg-mint-700'
@@ -167,6 +169,8 @@ const Controls = ({}: ControlsProps) => {
             : 'タイマーを開始 (Space)'
         }
         type="button"
+        aria-describedby="play-pause-help"
+        aria-pressed={isPlaying}
       >
         {isPlaying ? (
           // 一時停止アイコン
@@ -190,6 +194,13 @@ const Controls = ({}: ControlsProps) => {
           </svg>
         )}
       </button>
+      
+      {/* Hidden help text for screen readers */}
+      <div className="sr-only">
+        <div id="reset-help">Rキーでもリセットできます</div>
+        <div id="bell-test-help">Bキーでもベル音をテストできます</div>
+        <div id="play-pause-help">スペースキーでも再生・一時停止できます</div>
+      </div>
     </div>
   )
 }

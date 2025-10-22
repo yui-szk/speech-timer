@@ -150,7 +150,10 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
           placeholder="mm:ss"
           maxLength={5}
           aria-label="時間を編集"
-          aria-describedby={error ? 'time-error' : undefined}
+          aria-describedby={error ? 'time-error time-format-help' : 'time-format-help'}
+          aria-invalid={error ? 'true' : 'false'}
+          inputMode="numeric"
+          pattern="[0-9]{1,2}:[0-5][0-9]"
         />
         {error && (
           <div 
@@ -161,8 +164,8 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
             {error}
           </div>
         )}
-        <div className="text-xs text-gray-500 text-center">
-          Enterで確定、Escでキャンセル
+        <div id="time-format-help" className="text-xs text-gray-500 text-center">
+          mm:ss形式で入力してください。Enterで確定、Escでキャンセル
         </div>
       </div>
     )

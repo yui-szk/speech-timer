@@ -40,8 +40,7 @@ const ThemePicker = () => {
               key={theme.id}
               onClick={() => handleThemeChange(theme.id)}
               className={`
-                flex-1 p-3 rounded-lg border-2 transition-colors
-                focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2
+                flex-1 p-3 rounded-lg border-2 transition-colors focus-ring
                 ${isSelected 
                   ? `${theme.bgClass} ${theme.borderClass}` 
                   : 'bg-gray-100 border-transparent hover:bg-gray-200'

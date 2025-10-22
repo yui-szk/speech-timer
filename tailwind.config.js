@@ -47,6 +47,11 @@ export default {
         // タップ領域の最小サイズ（44x44px）
         'tap': '44px',
       },
+      // Accessibility-focused utilities
+      screens: {
+        'reduce-motion': { 'raw': '(prefers-reduced-motion: reduce)' },
+        'high-contrast': { 'raw': '(prefers-contrast: high)' },
+      },
     },
   },
   plugins: [],

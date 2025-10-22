@@ -11,7 +11,7 @@ const Header = () => {
         {isSettingsPage ? (
           <button
             onClick={() => navigate('/')}
-            className="flex items-center justify-center w-tap h-tap -ml-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2"
+            className="flex items-center justify-center w-tap h-tap -ml-2 rounded-lg hover:bg-gray-50 focus-ring"
             aria-label="メイン画面に戻る"
           >
             <svg
@@ -39,7 +39,7 @@ const Header = () => {
         {!isSettingsPage ? (
           <button
             onClick={() => navigate('/settings')}
-            className="flex items-center justify-center w-tap h-tap -mr-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2"
+            className="flex items-center justify-center w-tap h-tap -mr-2 rounded-lg hover:bg-gray-50 focus-ring"
             aria-label="設定画面を開く"
           >
             <svg
