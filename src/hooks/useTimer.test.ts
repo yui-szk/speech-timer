@@ -431,4 +431,236 @@ describe('useTimer', () => {
       // but each has its own timer engine instance
     })
   })
+
+  describe('Duplicate Update Prevention', () => {
+    it('should prevent duplicate setDuration calls with same value', async () => {
+      // Import timerSingleton to spy on it
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      // Get initial duration
+      const initialDuration = result.current.durationMs
+      
+      // Create spies after the hook is initialized
+      const timerSetDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      
+      // Call setDuration multiple times with the same value
+      act(() => {
+        result.current.setDuration(initialDuration)
+        result.current.setDuration(initialDuration)
+        result.current.setDuration(initialDuration)
+      })
+      
+      // Should not call timerSingleton.setDuration for duplicate values
+      expect(timerSetDurationSpy).not.toHaveBeenCalled()
+      
+      // Duration should remain the same
+      expect(result.current.durationMs).toBe(initialDuration)
+      
+      timerSetDurationSpy.mockRestore()
+    })
+
+    it('should allow setDuration calls with different values', async () => {
+      // Import timerSingleton to spy on it
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      // Get initial duration
+      const initialDuration = result.current.durationMs
+      const newDuration = initialDuration + 5000 // Add 5 seconds
+      
+      // Create spies after the hook is initialized
+      const timerSetDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      
+      // Call setDuration with a different value
+      act(() => {
+        result.current.setDuration(newDuration)
+      })
+      
+      // Should call timerSingleton.setDuration for different values
+      expect(timerSetDurationSpy).toHaveBeenCalledWith(newDuration)
+      expect(timerSetDurationSpy).toHaveBeenCalledTimes(1)
+      
+      // Duration should be updated
+      expect(result.current.durationMs).toBe(newDuration)
+      
+      timerSetDurationSpy.mockRestore()
+    })
+
+    it('should handle rapid consecutive setDuration calls correctly', async () => {
+      // Import timerSingleton to spy on it
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      const initialDuration = result.current.durationMs
+      const duration1 = initialDuration + 1000
+      const duration2 = initialDuration + 2000
+      const duration3 = initialDuration + 2000 // Same as duration2
+      
+      // Create spies
+      const timerSetDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      
+      // Call setDuration with different values, then same value
+      act(() => {
+        result.current.setDuration(duration1)
+        result.current.setDuration(duration2)
+        result.current.setDuration(duration3) // Should be skipped (same as duration2)
+      })
+      
+      // Should only call for the first two different values
+      expect(timerSetDurationSpy).toHaveBeenCalledTimes(2)
+      expect(timerSetDurationSpy).toHaveBeenNthCalledWith(1, duration1)
+      expect(timerSetDurationSpy).toHaveBeenNthCalledWith(2, duration2)
+      
+      // Final duration should be duration2
+      expect(result.current.durationMs).toBe(duration2)
+      
+      timerSetDurationSpy.mockRestore()
+    })
+
+    it('should verify setDuration call count with multiple different values', async () => {
+      // Import timerSingleton to spy on it
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      const initialDuration = result.current.durationMs
+      
+      // Create spy
+      const timerSetDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      
+      // Call setDuration with multiple different values
+      const values = [
+        initialDuration + 1000,
+        initialDuration + 2000,
+        initialDuration + 3000,
+        initialDuration + 4000
+      ]
+      
+      act(() => {
+        values.forEach(value => {
+          result.current.setDuration(value)
+        })
+      })
+      
+      // Should call for each different value
+      expect(timerSetDurationSpy).toHaveBeenCalledTimes(values.length)
+      values.forEach((value, index) => {
+        expect(timerSetDurationSpy).toHaveBeenNthCalledWith(index + 1, value)
+      })
+      
+      timerSetDurationSpy.mockRestore()
+    })
+  })
+
+  describe('Timer Engine and Store Synchronization', () => {
+    it('should sync store duration changes to timer engine', async () => {
+      // Import timerSingleton to check its state
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      const newDuration = 15 * 60 * 1000 // 15 minutes
+      
+      // Update duration through store directly
+      act(() => {
+        useAppStore.getState().setDuration(newDuration)
+      })
+      
+      // Check that timer engine is synced
+      const engineState = timerSingleton.getState()
+      expect(engineState?.durationMs).toBe(newDuration)
+      expect(result.current.durationMs).toBe(newDuration)
+    })
+
+    it('should maintain consistency between hook state and timer engine', async () => {
+      // Import timerSingleton to compare states
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      // Compare hook state with engine state at initialization
+      const engineState = timerSingleton.getState()
+      
+      expect(result.current.status).toBe(engineState?.status)
+      expect(result.current.durationMs).toBe(engineState?.durationMs)
+      expect(result.current.precisionDriftMs).toBe(engineState?.precisionDriftMs)
+    })
+
+    it('should handle timer engine state subscription correctly', async () => {
+      // Import timerSingleton to spy on subscription
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const subscribeSpy = vi.spyOn(timerSingleton, 'subscribe')
+      
+      // Create hook to trigger subscription
+      const { result } = renderHook(() => useTimer())
+      
+      // Should have called subscribe during initialization
+      expect(subscribeSpy).toHaveBeenCalled()
+      
+      // Verify the hook is properly initialized
+      expect(result.current.status).toBe('idle')
+      
+      subscribeSpy.mockRestore()
+    })
+
+    it('should handle multiple setDuration calls without race conditions', async () => {
+      // Import timerSingleton to spy on it
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      const timerSetDurationSpy = vi.spyOn(timerSingleton, 'setDuration')
+      
+      const initialDuration = result.current.durationMs
+      const duration1 = initialDuration + 1000  // Different from initial
+      const duration2 = initialDuration + 2000  // Different from duration1
+      const duration3 = initialDuration + 3000  // Different from duration2
+      
+      // Call setDuration multiple times in quick succession
+      act(() => {
+        result.current.setDuration(duration1)
+        result.current.setDuration(duration2)
+        result.current.setDuration(duration3)
+      })
+      
+      // All calls should go through since values are different
+      expect(timerSetDurationSpy).toHaveBeenCalledTimes(3)
+      
+      // Final state should reflect the last call
+      expect(result.current.durationMs).toBe(duration3)
+      
+      // Timer engine should also have the final value
+      const engineState = timerSingleton.getState()
+      expect(engineState?.durationMs).toBe(duration3)
+      
+      timerSetDurationSpy.mockRestore()
+    })
+
+    it('should verify store and engine synchronization on duration changes', async () => {
+      // Import timerSingleton to check synchronization
+      const { timerSingleton } = await import('../utils/timer-singleton')
+      
+      const { result } = renderHook(() => useTimer())
+      
+      const newDuration = 8 * 60 * 1000 // 8 minutes
+      
+      // Update duration through hook
+      act(() => {
+        result.current.setDuration(newDuration)
+      })
+      
+      // Check synchronization between store and engine
+      const storeState = useAppStore.getState()
+      const engineState = timerSingleton.getState()
+      
+      expect(storeState.timer.durationMs).toBe(newDuration)
+      expect(engineState?.durationMs).toBe(newDuration)
+      expect(result.current.durationMs).toBe(newDuration)
+    })
+  })
 })
