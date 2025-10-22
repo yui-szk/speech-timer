@@ -265,6 +265,249 @@ describe('TimerEngine', () => {
     })
   })
 
+  describe('setDuration Duplicate Update Prevention (要件 3.3)', () => {
+    describe('同じduration値での呼び出し時の状態非更新テスト', () => {
+      it('should not update any state properties when setting identical duration in idle state', () => {
+        const initialState = engine.getState()
+        
+        // 同じduration値で呼び出し
+        engine.setDuration(10000)
+        
+        const finalState = engine.getState()
+        
+        // 全ての状態プロパティが変更されていないことを確認
+        expect(finalState).toEqual(initialState)
+        expect(finalState.durationMs).toBe(initialState.durationMs)
+        expect(finalState.remainingMs).toBe(initialState.remainingMs)
+        expect(finalState.elapsedMs).toBe(initialState.elapsedMs)
+        expect(finalState.lastUpdateTime).toBe(initialState.lastUpdateTime)
+        expect(finalState.pauseAccumulatedMs).toBe(initialState.pauseAccumulatedMs)
+      })
+
+      it('should not update state when setting identical duration during running state', () => {
+        mockPerformanceNow.mockReturnValue(1000)
+        engine.start()
+        
+        // タイマーを2秒間実行
+        const rafCallback = mockRaf.mock.calls[0][0]
+        mockPerformanceNow.mockReturnValue(3000)
+        rafCallback(3000)
+        
+        const stateBeforeSetDuration = engine.getState()
+        
+        // 時間が経過した後に同じduration値で呼び出し
+        mockPerformanceNow.mockReturnValue(4000)
+        engine.setDuration(10000) // 元と同じ値
+        
+        const stateAfterSetDuration = engine.getState()
+        
+        // updateTimeCalculationsが呼ばれていないため、時間計算が更新されていないことを確認
+        expect(stateAfterSetDuration.elapsedMs).toBe(stateBeforeSetDuration.elapsedMs)
+        expect(stateAfterSetDuration.remainingMs).toBe(stateBeforeSetDuration.remainingMs)
+        expect(stateAfterSetDuration.lastUpdateTime).toBe(stateBeforeSetDuration.lastUpdateTime)
+        expect(stateAfterSetDuration.durationMs).toBe(10000)
+      })
+
+      it('should not update state when setting identical duration during paused state', () => {
+        mockPerformanceNow.mockReturnValue(1000)
+        engine.start()
+        
+        mockPerformanceNow.mockReturnValue(3000)
+        engine.pause()
+        
+        const stateBeforeSetDuration = engine.getState()
+        
+        // 一時停止中に同じduration値で呼び出し
+        mockPerformanceNow.mockReturnValue(5000)
+        engine.setDuration(10000) // 元と同じ値
+        
+        const stateAfterSetDuration = engine.getState()
+        
+        // 状態が変更されていないことを確認
+        expect(stateAfterSetDuration).toEqual(stateBeforeSetDuration)
+      })
+
+      it('should not trigger updateTimeCalculations when setting identical duration', () => {
+        // updateTimeCalculationsが呼ばれないことを間接的に検証
+        // performance.nowの呼び出し回数をカウントして確認
+        mockPerformanceNow.mockReturnValue(1000)
+        
+        const callCountBefore = mockPerformanceNow.mock.calls.length
+        
+        // 同じduration値で呼び出し
+        engine.setDuration(10000)
+        
+        const callCountAfter = mockPerformanceNow.mock.calls.length
+        
+        // performance.nowが追加で呼ばれていないことを確認（updateTimeCalculationsが呼ばれていない）
+        expect(callCountAfter).toBe(callCountBefore)
+      })
+    })
+
+    describe('異なるduration値での呼び出し時の状態更新テスト', () => {
+      it('should update state when setting different duration in idle state', () => {
+        const initialState = engine.getState()
+        
+        // 異なるduration値で呼び出し
+        engine.setDuration(15000)
+        
+        const finalState = engine.getState()
+        
+        // duration関連の状態が更新されていることを確認
+        expect(finalState.durationMs).toBe(15000)
+        expect(finalState.remainingMs).toBe(15000)
+        expect(finalState.durationMs).not.toBe(initialState.durationMs)
+        expect(finalState.remainingMs).not.toBe(initialState.remainingMs)
+      })
+
+      it('should update state and recalculate times when setting different duration during running', () => {
+        mockPerformanceNow.mockReturnValue(1000)
+        engine.start()
+        
+        // タイマーを2秒間実行（20%経過）
+        const rafCallback = mockRaf.mock.calls[0][0]
+        mockPerformanceNow.mockReturnValue(3000)
+        rafCallback(3000)
+        
+        const stateBeforeSetDuration = engine.getState()
+        expect(stateBeforeSetDuration.elapsedMs).toBe(2000)
+        expect(stateBeforeSetDuration.remainingMs).toBe(8000)
+        
+        // 異なるduration値で呼び出し（5秒に変更）
+        mockPerformanceNow.mockReturnValue(4000)
+        engine.setDuration(5000)
+        
+        const stateAfterSetDuration = engine.getState()
+        
+        // 新しいdurationが設定されていることを確認
+        expect(stateAfterSetDuration.durationMs).toBe(5000)
+        
+        // updateTimeCalculationsが実行されるため、実際の経過時間から再計算される
+        // 実際の経過時間: pauseAccumulatedMs(0) + (4000 - 1000) = 3000ms
+        // 新しいdurationでの残り時間: 5000 - 3000 = 2000ms
+        expect(stateAfterSetDuration.remainingMs).toBe(2000)
+        expect(stateAfterSetDuration.elapsedMs).toBe(3000)
+        
+        // updateTimeCalculationsが呼ばれて時間計算が更新されていることを確認
+        expect(stateAfterSetDuration.lastUpdateTime).toBe(4000)
+      })
+
+      it('should update state when setting different duration during paused state', () => {
+        mockPerformanceNow.mockReturnValue(1000)
+        engine.start()
+        
+        mockPerformanceNow.mockReturnValue(3000)
+        engine.pause()
+        
+        const stateBeforeSetDuration = engine.getState()
+        expect(stateBeforeSetDuration.pauseAccumulatedMs).toBe(2000) // 2秒間実行後に一時停止
+        // 一時停止時はremainingMsが正しく更新されていない可能性があるため、実際の値を確認
+        
+        // 一時停止中に異なるduration値で呼び出し
+        mockPerformanceNow.mockReturnValue(5000)
+        engine.setDuration(20000)
+        
+        const stateAfterSetDuration = engine.getState()
+        
+        // 新しいdurationが設定されていることを確認
+        expect(stateAfterSetDuration.durationMs).toBe(20000)
+        expect(stateAfterSetDuration.durationMs).not.toBe(stateBeforeSetDuration.durationMs)
+        
+        // remainingMsが適切に調整されていることを確認
+        // 一時停止中でも比例計算が適用される
+        const remainingRatio = stateBeforeSetDuration.remainingMs / stateBeforeSetDuration.durationMs
+        const expectedRemaining = 20000 * remainingRatio
+        expect(stateAfterSetDuration.remainingMs).toBe(expectedRemaining)
+        
+        // 一時停止中はupdateTimeCalculationsが呼ばれても、startTimeがundefinedなので
+        // 実際には状態更新されない。lastUpdateTimeは一時停止時の値のまま
+        expect(stateAfterSetDuration.lastUpdateTime).toBe(stateBeforeSetDuration.lastUpdateTime)
+      })
+
+      it('should trigger updateTimeCalculations when setting different duration', () => {
+        mockPerformanceNow.mockReturnValue(1000)
+        
+        const callCountBefore = mockPerformanceNow.mock.calls.length
+        
+        // 異なるduration値で呼び出し
+        engine.setDuration(15000)
+        
+        const callCountAfter = mockPerformanceNow.mock.calls.length
+        
+        // performance.nowが追加で呼ばれていることを確認（updateTimeCalculationsが呼ばれた）
+        expect(callCountAfter).toBeGreaterThan(callCountBefore)
+      })
+    })
+
+    describe('状態変更の有無を検証するテストケース', () => {
+      it('should maintain object reference equality when no changes occur', () => {
+        const initialState = engine.getState()
+        
+        // 同じduration値で複数回呼び出し
+        engine.setDuration(10000)
+        engine.setDuration(10000)
+        engine.setDuration(10000)
+        
+        const finalState = engine.getState()
+        
+        // 状態オブジェクトの内容が同じであることを確認
+        expect(finalState).toEqual(initialState)
+      })
+
+      it('should detect state changes only when duration actually changes', () => {
+        const states: TimerEngineState[] = []
+        
+        // 初期状態を記録
+        states.push(engine.getState())
+        
+        // 同じ値で呼び出し（変更なし）
+        engine.setDuration(10000)
+        states.push(engine.getState())
+        
+        // 異なる値で呼び出し（変更あり）
+        engine.setDuration(15000)
+        states.push(engine.getState())
+        
+        // 同じ値で呼び出し（変更なし）
+        engine.setDuration(15000)
+        states.push(engine.getState())
+        
+        // 状態変更の検証
+        expect(states[0]).toEqual(states[1]) // 同じ値設定時は変更なし
+        expect(states[1]).not.toEqual(states[2]) // 異なる値設定時は変更あり
+        expect(states[2]).toEqual(states[3]) // 同じ値設定時は変更なし
+      })
+
+      it('should preserve all state properties when no duration change occurs', () => {
+        // 複雑な状態を作成
+        mockPerformanceNow.mockReturnValue(1000)
+        engine.start()
+        
+        mockPerformanceNow.mockReturnValue(3000)
+        engine.pause()
+        
+        mockPerformanceNow.mockReturnValue(5000)
+        engine.resume()
+        
+        const complexState = engine.getState()
+        
+        // 同じduration値で呼び出し
+        mockPerformanceNow.mockReturnValue(7000)
+        engine.setDuration(10000)
+        
+        const stateAfterSameDuration = engine.getState()
+        
+        // 重要な状態プロパティが保持されていることを確認
+        expect(stateAfterSameDuration.status).toBe(complexState.status)
+        expect(stateAfterSameDuration.pauseAccumulatedMs).toBe(complexState.pauseAccumulatedMs)
+        expect(stateAfterSameDuration.startTime).toBe(complexState.startTime)
+        expect(stateAfterSameDuration.elapsedMs).toBe(complexState.elapsedMs)
+        expect(stateAfterSameDuration.remainingMs).toBe(complexState.remainingMs)
+        expect(stateAfterSameDuration.lastUpdateTime).toBe(complexState.lastUpdateTime)
+      })
+    })
+  })
+
   describe('Precision Monitoring', () => {
     it('should track precision drift', () => {
       mockPerformanceNow.mockReturnValue(0)

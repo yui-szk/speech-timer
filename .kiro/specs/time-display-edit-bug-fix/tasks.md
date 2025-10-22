@@ -29,7 +29,7 @@
   - 値変更検出とバリデーションを分離
   - _要件: 2.3_
 
-- [ ] 6. TimerEngineクラスの単体テストを追加
+- [x] 6. TimerEngineクラスの単体テストを追加
   - 同じduration値での`setDuration`呼び出し時の状態非更新テスト
   - 異なるduration値での`setDuration`呼び出し時の状態更新テスト
   - 状態変更の有無を検証するテストケース
