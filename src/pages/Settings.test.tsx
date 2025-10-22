@@ -41,7 +41,7 @@ describe('Settings Page', () => {
     render(<Settings />)
     
     // Theme picker
-    expect(screen.getByText('テーマ設定')).toBeInTheDocument()
+    expect(screen.getAllByText('テーマ設定')).toHaveLength(2) // h2 and h3 elements
     expect(screen.getByLabelText('ミントテーマを選択')).toBeInTheDocument()
     
     // Bell sound picker

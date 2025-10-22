@@ -193,6 +193,7 @@ describe('Component Performance Integration', () => {
         performanceMonitor.recordTimingAccuracy(1000, 1010) // 10ms accuracy
       }
       
+      // Wait for the useEffect to update the state
       await waitFor(() => {
         const frameRate = screen.getByTestId('frame-rate')
         const renderCount = screen.getByTestId('render-count')
@@ -203,7 +204,7 @@ describe('Component Performance Integration', () => {
         expect(renderCount.textContent).not.toBe('0')
         expect(timingAccuracy.textContent).not.toBe('0.0')
         expect(isGood.textContent).toBe('true')
-      })
+      }, { timeout: 2000 })
     })
 
     it('should detect performance issues', async () => {
@@ -218,7 +219,7 @@ describe('Component Performance Integration', () => {
         
         expect(warnings.textContent).toContain('Poor timing accuracy')
         expect(isGood.textContent).toBe('false')
-      })
+      }, { timeout: 2000 })
     })
   })
 

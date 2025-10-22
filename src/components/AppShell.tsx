@@ -3,6 +3,7 @@ import { memo } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import PerformanceDebugger from './PerformanceDebugger';
+import LiveAnnouncer from './LiveAnnouncer';
 
 const AppShell = memo(() => {
   return (
@@ -12,6 +13,7 @@ const AppShell = memo(() => {
         <Outlet />
       </main>
       <Footer />
+      <LiveAnnouncer />
       <PerformanceDebugger />
     </div>
   );
