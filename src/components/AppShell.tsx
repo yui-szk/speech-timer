@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom';
 import { memo } from 'react';
 import Header from './Header';
 import Footer from './Footer';
-import PerformanceDebugger from './PerformanceDebugger';
 import LiveAnnouncer from './LiveAnnouncer';
 
 const AppShell = memo(() => {
@@ -14,7 +13,6 @@ const AppShell = memo(() => {
       </main>
       <Footer />
       <LiveAnnouncer />
-      <PerformanceDebugger />
     </div>
   );
 });
