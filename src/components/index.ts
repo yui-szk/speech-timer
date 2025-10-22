@@ -6,3 +6,6 @@ export { default as CircularProgress } from './CircularProgress';
 export { default as Controls } from './Controls';
 export { default as BellScheduleStrip } from './BellScheduleStrip';
 export { default as StartAndNowClock } from './StartAndNowClock';
+export { default as ThemePicker } from './ThemePicker';
+export { default as BellSoundPicker } from './BellSoundPicker';
+export { default as ProgressModeToggle } from './ProgressModeToggle';
