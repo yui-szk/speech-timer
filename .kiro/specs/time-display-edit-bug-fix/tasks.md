@@ -17,7 +17,7 @@
   - 値が変更された場合のみ`setDuration`を呼び出すロジックを追加
   - _要件: 1.1, 1.3, 2.1_
 
-- [ ] 4. TimeDisplayコンポーネントの編集状態管理を改善
+- [x] 4. TimeDisplayコンポーネントの編集状態管理を改善
   - `originalValue`と`hasChanges`フラグを状態に追加
   - `handleClick`で編集開始時に元の値を保存
   - `handleSubmit`で値変更検出を行い、変更がある場合のみ更新

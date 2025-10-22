@@ -13,6 +13,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [originalValue, setOriginalValue] = useState('')
+  const [hasChanges, setHasChanges] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -42,6 +43,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
     setIsEditing(true)
     setInputValue(displayTime)
     setOriginalValue(displayTime) // 編集開始時の元の値を保存
+    setHasChanges(false) // 編集開始時は変更なし
     setError(null)
   }
 
@@ -65,12 +67,13 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
       return
     }
 
-    // 値が変更された場合のみsetDurationを呼び出す
-    if (hasValueChanged(originalValue, trimmedValue)) {
+    // hasChangesフラグを使用して値変更検出を行い、変更がある場合のみ更新
+    if (hasChanges && hasValueChanged(originalValue, trimmedValue)) {
       setDuration(parsedMs)
     }
     
     setIsEditing(false)
+    setHasChanges(false)
     setError(null)
   }
 
@@ -79,6 +82,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
     setIsEditing(false)
     setInputValue('')
     setOriginalValue('')
+    setHasChanges(false)
     setError(null)
   }
 
@@ -97,6 +101,9 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setInputValue(value)
+    
+    // 値が変更されたかどうかをhasChangesフラグで追跡
+    setHasChanges(hasValueChanged(originalValue, value))
     
     // リアルタイムバリデーション
     if (value && !validateTimeFormat(value)) {
