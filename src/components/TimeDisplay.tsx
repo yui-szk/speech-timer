@@ -1,45 +1,47 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { formatMsToTime, parseTimeToMs, validateTimeFormat } from '../utils/time'
-import { useTimerState, useTimerActions } from '../store'
-import type { Millis } from '../types'
+import { useTimer } from '../hooks/useTimer'
+
 
 interface TimeDisplayProps {
   className?: string
 }
 
 const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
-  const timer = useTimerState()
-  const { setDuration } = useTimerActions()
+  const { status, remainingMs, setDuration } = useTimer()
   
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [originalValue, setOriginalValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 残り時間を計算
-  const calculateRemainingTime = (): Millis => {
-    if (timer.status === 'idle' || timer.status === 'finished') {
-      return timer.durationMs
-    }
-    
-    let elapsed = timer.pauseAccumulatedMs
-    if (timer.status === 'running' && timer.startEpochMs) {
-      elapsed += timer.nowEpochMs - timer.startEpochMs
-    }
-    
-    const remaining = Math.max(0, timer.durationMs - elapsed)
-    return remaining
-  }
 
-  const remainingTime = calculateRemainingTime()
-  const displayTime = formatMsToTime(remainingTime)
+
+  // 残り時間の表示
+  const displayTime = formatMsToTime(remainingMs)
+
+  // 値の変更を検出する関数
+  const hasValueChanged = (original: string, current: string): boolean => {
+    const originalMs = parseTimeToMs(original.trim())
+    const currentMs = parseTimeToMs(current.trim())
+    
+    // 両方とも有効な値の場合のみ比較
+    if (originalMs !== null && currentMs !== null) {
+      return originalMs !== currentMs
+    }
+    
+    // どちらかが無効な場合は、文字列として比較
+    return original.trim() !== current.trim()
+  }
 
   // 編集モードに入る
   const handleClick = () => {
-    if (timer.status === 'running') return // 実行中は編集不可
+    if (status === 'running') return // 実行中は編集不可
     
     setIsEditing(true)
     setInputValue(displayTime)
+    setOriginalValue(displayTime) // 編集開始時の元の値を保存
     setError(null)
   }
 
@@ -63,7 +65,11 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
       return
     }
 
-    setDuration(parsedMs)
+    // 値が変更された場合のみsetDurationを呼び出す
+    if (hasValueChanged(originalValue, trimmedValue)) {
+      setDuration(parsedMs)
+    }
+    
     setIsEditing(false)
     setError(null)
   }
@@ -72,6 +78,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
   const handleCancel = () => {
     setIsEditing(false)
     setInputValue('')
+    setOriginalValue('')
     setError(null)
   }
 
@@ -123,8 +130,8 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
     ${baseClasses}
     text-4xl sm:text-5xl md:text-6xl lg:text-7xl
     text-mint-600 cursor-pointer hover:text-mint-700
-    ${timer.status === 'running' ? 'cursor-not-allowed opacity-75' : ''}
-    ${timer.status === 'finished' ? 'text-red-500' : ''}
+    ${status === 'running' ? 'cursor-not-allowed opacity-75' : ''}
+    ${status === 'finished' ? 'text-red-500' : ''}
   `
 
   const inputClasses = `
@@ -177,9 +184,9 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
         className={displayClasses}
         onClick={handleClick}
         role="button"
-        tabIndex={timer.status === 'running' ? -1 : 0}
+        tabIndex={status === 'running' ? -1 : 0}
         onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && timer.status !== 'running') {
+          if ((e.key === 'Enter' || e.key === ' ') && status !== 'running') {
             e.preventDefault()
             handleClick()
           }
@@ -193,7 +200,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ className = '' }) => {
         id="time-hint"
         className="text-xs text-gray-500 text-center"
       >
-        {timer.status === 'running' 
+        {status === 'running' 
           ? '実行中は編集できません' 
           : 'クリックで時間を編集'
         }
