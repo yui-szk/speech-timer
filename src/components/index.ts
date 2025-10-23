@@ -10,3 +10,4 @@ export { default as ThemePicker } from './ThemePicker';
 export { default as BellSoundPicker } from './BellSoundPicker';
 export { default as ProgressModeToggle } from './ProgressModeToggle';
 export { default as LiveAnnouncer } from './LiveAnnouncer';
+export { default as ScrollableTimePicker } from './ScrollableTimePicker';

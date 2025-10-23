@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ScrollableTimePicker } from '../components';
 
 const TimeSettingPage: React.FC = () => {
   const navigate = useNavigate();
+  
+  // 時間の状態管理
+  const [mainTime, setMainTime] = useState(5 * 60 * 1000); // 5分をミリ秒で
+  const [bellTimes, setBellTimes] = useState({
+    first: 4 * 60 * 1000,  // 4分
+    second: 5 * 60 * 1000, // 5分
+    third: 8 * 60 * 1000   // 8分
+  });
 
   const handlePlayButtonClick = () => {
     navigate('/timer');
@@ -23,25 +32,25 @@ const TimeSettingPage: React.FC = () => {
       {/* メインコンテンツ */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         {/* スクロール可能な時間ピッカー（メインタイマー） */}
-        <div className="text-center mb-12">
-          {/* 上の値（薄く表示） */}
-          <div className="text-4xl font-mono text-gray-400 font-light mb-2">04:59</div>
-          {/* 現在の値（メイン表示） */}
-          <div className="text-6xl font-mono text-gray-800 font-light mb-2">05:00</div>
-          {/* 下の値（薄く表示） */}
-          <div className="text-4xl font-mono text-gray-400 font-light">06:01</div>
+        <div className="mb-12">
+          <ScrollableTimePicker
+            value={mainTime}
+            onChange={setMainTime}
+            size="large"
+            className="mb-4"
+          />
         </div>
 
         {/* 各令の時間設定 */}
-        <div className="flex justify-center items-start space-x-16 mb-16">
+        <div className="flex justify-center items-start space-x-8 mb-16">
           {/* 1令 */}
-          <div className="text-center">
-            {/* 上の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-1">03:59</div>
-            {/* 現在の値 */}
-            <div className="text-2xl font-mono text-gray-800 font-light mb-1">04:00</div>
-            {/* 下の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-4">05:01</div>
+          <div className="text-center min-w-[100px]">
+            <ScrollableTimePicker
+              value={bellTimes.first}
+              onChange={(value) => setBellTimes(prev => ({ ...prev, first: value }))}
+              size="medium"
+              className="mb-4"
+            />
             {/* ベルアイコン */}
             <div className="flex justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-yellow-400">
@@ -52,13 +61,13 @@ const TimeSettingPage: React.FC = () => {
           </div>
 
           {/* 2令 */}
-          <div className="text-center">
-            {/* 上の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-1">04:59</div>
-            {/* 現在の値 */}
-            <div className="text-2xl font-mono text-gray-800 font-light mb-1">05:00</div>
-            {/* 下の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-4">06:01</div>
+          <div className="text-center min-w-[100px]">
+            <ScrollableTimePicker
+              value={bellTimes.second}
+              onChange={(value) => setBellTimes(prev => ({ ...prev, second: value }))}
+              size="medium"
+              className="mb-4"
+            />
             {/* ベルアイコン */}
             <div className="flex justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-yellow-400">
@@ -69,13 +78,13 @@ const TimeSettingPage: React.FC = () => {
           </div>
 
           {/* 3令 */}
-          <div className="text-center">
-            {/* 上の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-1">07:59</div>
-            {/* 現在の値 */}
-            <div className="text-2xl font-mono text-gray-800 font-light mb-1">08:00</div>
-            {/* 下の値（薄く表示） */}
-            <div className="text-lg font-mono text-gray-400 font-light mb-4">09:01</div>
+          <div className="text-center min-w-[100px]">
+            <ScrollableTimePicker
+              value={bellTimes.third}
+              onChange={(value) => setBellTimes(prev => ({ ...prev, third: value }))}
+              size="medium"
+              className="mb-4"
+            />
             {/* ベルアイコン */}
             <div className="flex justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-yellow-400">
