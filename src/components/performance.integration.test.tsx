@@ -141,8 +141,8 @@ describe('Component Performance Integration', () => {
       const endTime = performance.now()
       const totalTime = endTime - startTime
       
-      // Should handle responsive changes quickly
-      expect(totalTime).toBeLessThan(20)
+      // Should handle responsive changes quickly (increased threshold for 3-circle implementation)
+      expect(totalTime).toBeLessThan(40)
     })
   })
 

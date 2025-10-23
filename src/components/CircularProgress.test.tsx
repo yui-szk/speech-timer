@@ -1,49 +1,48 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { CircularProgress } from './CircularProgress'
-import type { TimerState, TimerSettings } from '../types'
+import type { UseTimerReturn } from '../hooks/useTimer'
 
-// Mock the store
-const mockStore = {
-  timer: {
-    status: 'idle' as const,
-    durationMs: 10 * 60 * 1000, // 10 minutes
-    startEpochMs: undefined,
-    pauseAccumulatedMs: 0,
-    nowEpochMs: 0
-  } as TimerState,
-  settings: {
-    progressMode: 'remaining' as const,
-    theme: 'mint' as const,
-    bellEnabled: { first: true, second: true, third: true },
-    bellTimesMs: { first: 180000, second: 120000, third: 60000 },
-    volume: 0.7
-  } as TimerSettings
+// Mock timer hook
+const mockTimer: UseTimerReturn = {
+  status: 'idle',
+  elapsedMs: 0,
+  remainingMs: 10 * 60 * 1000, // 10 minutes
+  durationMs: 10 * 60 * 1000, // 10 minutes
+  precisionDriftMs: 0,
+  start: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  reset: vi.fn(),
+  setDuration: vi.fn(),
+  testBell: vi.fn(),
+  initializeAudio: vi.fn(),
+  isAudioReady: false,
+  isRunning: false,
+  isPaused: false,
+  isIdle: true,
+  isFinished: false
 }
 
-// Mock zustand store
-vi.mock('../store', () => ({
-  useTimerState: () => mockStore.timer,
-  useSettings: () => mockStore.settings
+// Mock useTimer hook
+vi.mock('../hooks/useTimer', () => ({
+  useTimer: () => mockTimer
 }))
 
 describe('CircularProgress', () => {
   beforeEach(() => {
-    // Reset mock store to default state
-    mockStore.timer = {
+    // Reset mock timer to default state
+    Object.assign(mockTimer, {
       status: 'idle',
+      elapsedMs: 0,
+      remainingMs: 10 * 60 * 1000, // 10 minutes
       durationMs: 10 * 60 * 1000, // 10 minutes
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 0,
-      nowEpochMs: 0
-    }
-    mockStore.settings = {
-      progressMode: 'remaining',
-      theme: 'mint',
-      bellEnabled: { first: true, second: true, third: true },
-      bellTimesMs: { first: 180000, second: 120000, third: 60000 },
-      volume: 0.7
-    }
+      precisionDriftMs: 0,
+      isRunning: false,
+      isPaused: false,
+      isIdle: true,
+      isFinished: false
+    })
   })
 
   it('renders circular progress bar with correct structure', () => {
@@ -51,7 +50,7 @@ describe('CircularProgress', () => {
     
     const svg = screen.getByRole('img')
     expect(svg).toBeInTheDocument()
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 100%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り100%')
     
     // Should have two circles (background and progress)
     const circles = svg.querySelectorAll('circle')
@@ -59,116 +58,115 @@ describe('CircularProgress', () => {
   })
 
   it('shows 100% progress in remaining mode when timer is idle', () => {
-    mockStore.settings.progressMode = 'remaining'
-    
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 100%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り100%')
   })
 
-  it('shows 0% progress in elapsed mode when timer is idle', () => {
-    mockStore.settings.progressMode = 'elapsed'
-    
+  it('shows 100% progress when timer is idle regardless of mode', () => {
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 0%')
+    // Always shows remaining percentage, so idle timer shows 100% remaining
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り100%')
   })
 
   it('calculates correct progress in remaining mode when timer is running', () => {
-    const now = performance.now()
-    mockStore.timer = {
+    Object.assign(mockTimer, {
       status: 'running',
-      durationMs: 10 * 60 * 1000, // 10 minutes
-      startEpochMs: now - 5 * 60 * 1000, // Started 5 minutes ago
-      pauseAccumulatedMs: 0,
-      nowEpochMs: now
-    }
-    mockStore.settings.progressMode = 'remaining'
+      elapsedMs: 5 * 60 * 1000, // 5 minutes elapsed
+      remainingMs: 5 * 60 * 1000, // 5 minutes remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isRunning: true,
+      isIdle: false
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
     // 5 minutes elapsed out of 10 minutes = 50% remaining
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 50%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り50%')
   })
 
-  it('calculates correct progress in elapsed mode when timer is running', () => {
-    const now = performance.now()
-    mockStore.timer = {
+  it('calculates correct progress when timer is running', () => {
+    Object.assign(mockTimer, {
       status: 'running',
-      durationMs: 10 * 60 * 1000, // 10 minutes
-      startEpochMs: now - 3 * 60 * 1000, // Started 3 minutes ago
-      pauseAccumulatedMs: 0,
-      nowEpochMs: now
-    }
-    mockStore.settings.progressMode = 'elapsed'
+      elapsedMs: 3 * 60 * 1000, // 3 minutes elapsed
+      remainingMs: 7 * 60 * 1000, // 7 minutes remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isRunning: true,
+      isIdle: false
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    // 3 minutes elapsed out of 10 minutes = 30% elapsed
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 30%')
+    // Always shows remaining percentage: 3 minutes elapsed = 70% remaining
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り70%')
   })
 
   it('handles paused timer correctly with accumulated pause time', () => {
-    const now = performance.now()
-    mockStore.timer = {
+    Object.assign(mockTimer, {
       status: 'paused',
-      durationMs: 10 * 60 * 1000, // 10 minutes
-      startEpochMs: undefined, // Not currently running
-      pauseAccumulatedMs: 4 * 60 * 1000, // 4 minutes of accumulated time
-      nowEpochMs: now
-    }
-    mockStore.settings.progressMode = 'remaining'
+      elapsedMs: 4 * 60 * 1000, // 4 minutes elapsed
+      remainingMs: 6 * 60 * 1000, // 6 minutes remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isPaused: true,
+      isIdle: false
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
     // 4 minutes elapsed out of 10 minutes = 60% remaining
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 60%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り60%')
   })
 
   it('shows 0% progress in remaining mode when timer is finished', () => {
-    mockStore.timer = {
+    Object.assign(mockTimer, {
       status: 'finished',
-      durationMs: 10 * 60 * 1000,
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 10 * 60 * 1000, // Full duration elapsed
-      nowEpochMs: performance.now()
-    }
-    mockStore.settings.progressMode = 'remaining'
+      elapsedMs: 10 * 60 * 1000, // Full duration elapsed
+      remainingMs: 0, // No time remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isFinished: true,
+      isIdle: false
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 0%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り0%')
   })
 
-  it('shows 100% progress in elapsed mode when timer is finished', () => {
-    mockStore.timer = {
+  it('shows 0% progress when timer is finished', () => {
+    Object.assign(mockTimer, {
       status: 'finished',
-      durationMs: 10 * 60 * 1000,
-      startEpochMs: undefined,
-      pauseAccumulatedMs: 10 * 60 * 1000, // Full duration elapsed
-      nowEpochMs: performance.now()
-    }
-    mockStore.settings.progressMode = 'elapsed'
+      elapsedMs: 10 * 60 * 1000, // Full duration elapsed
+      remainingMs: 0, // No time remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isFinished: true,
+      isIdle: false
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 100%')
+    // Always shows remaining percentage, so finished timer shows 0% remaining
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り0%')
   })
 
   it('applies correct CSS classes based on timer status', () => {
     // Test running state
-    mockStore.timer.status = 'running'
+    Object.assign(mockTimer, {
+      status: 'running',
+      isRunning: true,
+      isIdle: false
+    })
     const { rerender } = render(<CircularProgress />)
     
     let progressCircle = document.querySelector('circle:last-child')
-    expect(progressCircle).toHaveClass('stroke-mint-500')
+    expect(progressCircle).toHaveClass('stroke-[#a6d5cd]')
     
     // Skip other status tests as they depend on complex state management
     // Just verify the component renders without errors
@@ -196,36 +194,36 @@ describe('CircularProgress', () => {
   })
 
   it('handles zero duration gracefully', () => {
-    mockStore.timer.durationMs = 0
+    Object.assign(mockTimer, {
+      durationMs: 0,
+      remainingMs: 0
+    })
     
     render(<CircularProgress />)
     
     const svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 0%')
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り100%')
   })
 
-  it('switches progress mode correctly', () => {
-    const now = performance.now()
-    mockStore.timer = {
+  it('always shows remaining time percentage', () => {
+    Object.assign(mockTimer, {
       status: 'running',
-      durationMs: 10 * 60 * 1000, // 10 minutes
-      startEpochMs: now - 2 * 60 * 1000, // Started 2 minutes ago
-      pauseAccumulatedMs: 0,
-      nowEpochMs: now
-    }
+      elapsedMs: 2 * 60 * 1000, // 2 minutes elapsed
+      remainingMs: 8 * 60 * 1000, // 8 minutes remaining
+      durationMs: 10 * 60 * 1000, // 10 minutes total
+      isRunning: true,
+      isIdle: false
+    })
     
-    // Test remaining mode
-    mockStore.settings.progressMode = 'remaining'
     const { rerender } = render(<CircularProgress />)
     
     let svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 80%') // 80% remaining
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り80%') // 80% remaining
     
-    // Switch to elapsed mode
-    mockStore.settings.progressMode = 'elapsed'
+    // Rerender with same state - still shows remaining percentage
     rerender(<CircularProgress />)
     
     svg = screen.getByRole('img')
-    expect(svg).toHaveAttribute('aria-label', 'Timer progress: 80%') // Still 80% in test
+    expect(svg).toHaveAttribute('aria-label', 'タイマー進行状況: 残り80%') // Still shows remaining
   })
 })

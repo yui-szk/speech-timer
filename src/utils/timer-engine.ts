@@ -128,17 +128,31 @@ export class TimerEngine {
       return
     }
 
-    const oldDuration = this.state.durationMs
-    const remainingRatio = this.state.remainingMs / oldDuration
-    
-    this.state = {
-      ...this.state,
-      durationMs,
-      remainingMs: Math.max(0, durationMs * remainingRatio)
+    // If timer is idle, set remaining time to full duration
+    if (this.state.status === 'idle') {
+      this.state = {
+        ...this.state,
+        durationMs,
+        remainingMs: durationMs,
+        elapsedMs: 0
+      }
+    } else {
+      // If timer is running or paused, maintain the ratio
+      const oldDuration = this.state.durationMs
+      const remainingRatio = oldDuration > 0 ? this.state.remainingMs / oldDuration : 1
+      
+      this.state = {
+        ...this.state,
+        durationMs,
+        remainingMs: Math.max(0, durationMs * remainingRatio)
+      }
+
+      // Recalculate elapsed based on new duration
+      this.updateTimeCalculations(performance.now())
     }
 
-    // Recalculate elapsed based on new duration
-    this.updateTimeCalculations(performance.now())
+    // Notify subscribers of the duration change
+    this.callbacks.onTick?.(this.state)
   }
 
   /**

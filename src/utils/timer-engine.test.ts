@@ -424,8 +424,11 @@ describe('TimerEngine', () => {
         expect(stateAfterSetDuration.lastUpdateTime).toBe(stateBeforeSetDuration.lastUpdateTime)
       })
 
-      it('should trigger updateTimeCalculations when setting different duration', () => {
+      it('should trigger updateTimeCalculations when setting different duration during running', () => {
         mockPerformanceNow.mockReturnValue(1000)
+        
+        // Start the timer first so updateTimeCalculations will be called
+        engine.start()
         
         const callCountBefore = mockPerformanceNow.mock.calls.length
         

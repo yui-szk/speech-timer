@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react'
-import { useTimerState, useSettings } from '../store'
+import { useTimer } from '../hooks/useTimer'
 import type { Millis } from '../types'
 
 interface CircularProgressProps {
@@ -13,31 +13,11 @@ interface CircularProgressProps {
   responsive?: boolean
 }
 
-/**
- * Calculate elapsed time from timer state
- */
-function calculateElapsedTime(timer: ReturnType<typeof useTimerState>): Millis {
-  if (timer.status === 'idle') {
-    return 0
-  }
 
-  if (timer.status === 'finished') {
-    return timer.durationMs
-  }
-
-  // For running and paused states
-  const sessionElapsed = timer.startEpochMs 
-    ? timer.nowEpochMs - timer.startEpochMs 
-    : 0
-
-  const totalElapsed = timer.pauseAccumulatedMs + sessionElapsed
-  
-  return Math.min(totalElapsed, timer.durationMs)
-}
 
 /**
  * Circular progress bar component that displays timer progress
- * Supports both remaining time and elapsed time modes
+ * Shows remaining time as a colored circle that decreases clockwise
  */
 export const CircularProgress: React.FC<CircularProgressProps> = memo(({
   size = 200,
@@ -45,32 +25,25 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
   className = '',
   responsive = true
 }) => {
-  const timer = useTimerState()
-  const settings = useSettings()
+  const timer = useTimer()
 
-  // Calculate progress percentage based on mode
-  const progressPercentage = useMemo(() => {
-    if (timer.durationMs === 0) return 0
+  // Calculate remaining time percentage
+  const remainingPercentage = useMemo(() => {
+    if (timer.durationMs === 0) return 100
 
-    const elapsed = calculateElapsedTime(timer)
-    const remaining = timer.durationMs - elapsed
-
-    if (settings.progressMode === 'elapsed') {
-      // Elapsed mode: progress increases as time passes
-      return Math.min(100, (elapsed / timer.durationMs) * 100)
-    } else {
-      // Remaining mode: progress decreases as time passes
-      return Math.max(0, (remaining / timer.durationMs) * 100)
-    }
-  }, [timer, settings.progressMode])
+    return Math.max(0, (timer.remainingMs / timer.durationMs) * 100)
+  }, [timer.remainingMs, timer.durationMs])
 
   // Calculate circle properties
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
+  
+  // Calculate stroke dash offset for remaining time (clockwise from top)
+  // For clockwise: offset should be 0 when full (100%), circumference when empty (0%)
   const strokeDasharray = circumference
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference
+  const strokeDashoffset = circumference * (1 - remainingPercentage / 100)
 
-  // Determine colors based on timer status and progress - matching Figma design
+  // Determine colors based on timer status - matching the design
   const getProgressColor = () => {
     if (timer.status === 'finished') {
       return 'stroke-red-500'
@@ -78,7 +51,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
     if (timer.status === 'paused') {
       return 'stroke-yellow-500'
     }
-    return 'stroke-[#68b2a0]' // Figma design color
+    return 'stroke-[#a6d5cd]' // Mint green color matching the design
   }
 
   const getBackgroundColor = () => {
@@ -101,19 +74,19 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
         viewBox={responsive ? `0 0 ${size} ${size}` : undefined}
         className={svgClasses}
         role="img"
-        aria-label={`Timer progress: ${Math.round(progressPercentage)}%`}
+        aria-label={`タイマー進行状況: 残り${Math.round(remainingPercentage)}%`}
       >
-        {/* Background circle */}
+        {/* Background circle (light gray) */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
           strokeWidth={strokeWidth}
-          className={getBackgroundColor()}
+          className="stroke-gray-200"
         />
         
-        {/* Progress circle */}
+        {/* Progress circle (colored, decreases clockwise) */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -123,17 +96,17 @@ export const CircularProgress: React.FC<CircularProgressProps> = memo(({
           strokeLinecap="round"
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
-          className={`${getProgressColor()} transition-all duration-300 ease-out`}
+          className={`${getProgressColor()} transition-all duration-300 ease-linear`}
           style={{
             transformOrigin: 'center',
           }}
         />
       </svg>
       
-      {/* Progress percentage text (optional, can be hidden) */}
+      {/* Progress percentage text for screen readers */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-sm font-medium text-gray-600 sr-only">
-          {Math.round(progressPercentage)}%
+          残り時間: {Math.round(remainingPercentage)}%
         </span>
       </div>
     </div>

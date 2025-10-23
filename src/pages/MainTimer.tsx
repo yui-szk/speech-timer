@@ -1,8 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { TimeDisplay, CircularProgress, Controls, BellScheduleStrip, StartAndNowClock, LiveAnnouncer } from '../components'
+import { useTimer } from '../hooks/useTimer'
 
 const MainTimer = () => {
   const navigate = useNavigate()
+  
+  // Initialize timer hook to ensure timer engine is running
+  const timer = useTimer()
 
   const handleSettingsClick = () => {
     navigate('/settings')
